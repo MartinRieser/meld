@@ -14,10 +14,12 @@ VIEW_ACCELERATORS: Dict[str, Union[str, Sequence[str]]] = {
     'view.go-to-line': '<Primary>I',
     # Overridden in CSS
     'view.next-change': ('<Alt>Down', '<Alt>KP_Down', '<Primary>D'),
+    'view.next-file': '<Primary><Shift>Down',
     'view.next-pane': '<Alt>Page_Down',
     'view.open-external': '<Primary><Shift>O',
     # Overridden in CSS
     'view.previous-change': ('<Alt>Up', '<Alt>KP_Up', '<Primary>E'),
+    'view.previous-file': '<Primary><Shift>Up',
     'view.previous-pane': '<Alt>Page_Up',
     'view.redo': '<Primary><Shift>Z',
     'view.refresh': ('<control>R', 'F5'),

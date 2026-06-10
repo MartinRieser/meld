@@ -547,18 +547,32 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
                 self.run_diff(path)
 
     def run_diff(self, path):
-        if os.path.isdir(path):
-            self.create_diff_signal.emit([Gio.File.new_for_path(path)], {})
-            return
+        gfiles, kwargs = self.get_diff_arguments_by_path(path)
+        if gfiles:
+            self.create_diff_signal.emit(gfiles, kwargs)
 
-        basename = os.path.basename(path)
+    def get_diff_arguments_by_path(self, path):
+        if isinstance(path, str):
+            filepath = path
+            it = self.find_iter_by_name(path)
+            treepath = self.model.get_path(it) if it else None
+        else:
+            treepath = path
+            it = self.model.get_iter(treepath)
+            filepath = self.model.get_file_path(it)
+
+        if filepath and os.path.isdir(filepath):
+            return [Gio.File.new_for_path(filepath)], {}
+
+        basename = os.path.basename(filepath)
         meta = {
             'parent': self,
+            'current_path': treepath,
             'prompt_resolve': False,
         }
 
         # May have removed directories in list.
-        vc_entry = self.vc.get_entry(path)
+        vc_entry = self.vc.get_entry(filepath)
         if vc_entry and vc_entry.state == tree.STATE_CONFLICT and \
                 hasattr(self.vc, 'get_path_for_conflict'):
             local_label = _("%s — local") % basename
@@ -576,25 +590,25 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
                              tree.CONFLICT_THIS)
                 meta['labels'] = (remote_label, None, local_label)
                 meta['tablabel'] = _("%s (remote, merge, local)") % basename
-            diffs = [self.vc.get_path_for_conflict(path, conflict=c)
+            diffs = [self.vc.get_path_for_conflict(filepath, conflict=c)
                      for c in conflicts]
             temps = [p for p, is_temp in diffs if is_temp]
             diffs = [p for p, is_temp in diffs]
             kwargs = {
                 'auto_merge': False,
-                'merge_output': Gio.File.new_for_path(path),
+                'merge_output': Gio.File.new_for_path(filepath),
             }
             meta['prompt_resolve'] = True
         else:
             remote_label = _("%s — repository") % basename
-            comp_path = self.vc.get_path_for_repo_file(path)
+            comp_path = self.vc.get_path_for_repo_file(filepath)
             temps = [comp_path]
             if self.props.left_is_local:
-                diffs = [path, comp_path]
+                diffs = [filepath, comp_path]
                 meta['labels'] = (None, remote_label)
                 meta['tablabel'] = _("%s (working, repository)") % basename
             else:
-                diffs = [comp_path, path]
+                diffs = [comp_path, filepath]
                 meta['labels'] = (remote_label, None)
                 meta['tablabel'] = _("%s (repository, working)") % basename
             kwargs = {}
@@ -604,10 +618,17 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             os.chmod(temp_file, 0o444)
             _temp_files.append(temp_file)
 
-        self.create_diff_signal.emit(
-            [Gio.File.new_for_path(d) for d in diffs],
-            kwargs,
-        )
+        return [Gio.File.new_for_path(d) for d in diffs], kwargs
+
+    def get_next_prev_diff_file(self, start_path):
+        def match_func(it):
+            state = self.model.get_state(it, 0)
+            if state in (tree.STATE_NORMAL, tree.STATE_EMPTY):
+                return False
+            path = self.model.get_file_path(it)
+            return path and not self.model.is_folder(it, 0, path)
+
+        return self.model.get_previous_next_paths(start_path, match_func)
 
     def get_filter_visibility(self) -> Tuple[bool, bool, bool]:
         return False, False, True

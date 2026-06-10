@@ -351,11 +351,13 @@ class FileDiff(Gtk.Box, MeldDoc):
             ('merge-all-right', self.action_pull_all_changes_right),
             ('merge-all', self.action_merge_all_changes),
             ('next-change', self.action_next_change),
+            ('next-file', self.action_next_file),
             ('next-pane', self.action_next_pane),
             ('open-external', self.action_open_external),
             ('open-folder', self.action_open_folder),
             ('paste', self.action_paste),
             ('previous-change', self.action_previous_change),
+            ('previous-file', self.action_previous_file),
             ('previous-pane', self.action_prev_pane),
             ('redo', self.action_redo),
             ('refresh', self.action_refresh),
@@ -862,6 +864,49 @@ class FileDiff(Gtk.Box, MeldDoc):
 
     def action_next_change(self, *args):
         self.next_diff(Gdk.ScrollDirection.DOWN)
+
+    def action_previous_file(self, *args):
+        self.navigate_to_sibling_file(-1)
+
+    def action_next_file(self, *args):
+        self.navigate_to_sibling_file(1)
+
+    def navigate_to_sibling_file(self, direction):
+        parent = self.meta.get('parent', None)
+        current_path = self.meta.get('current_path', None)
+        if not parent or not current_path:
+            return
+
+        if not self.check_unsaved_changes():
+            return
+
+        prev_path, next_path = parent.get_next_prev_diff_file(current_path)
+        target_path = next_path if direction == 1 else prev_path
+
+        if target_path:
+            gfiles, kwargs = parent.get_diff_arguments_by_path(target_path)
+            if gfiles:
+                self.set_files(gfiles)
+                new_meta = kwargs.get('meta', {})
+                if new_meta:
+                    self.set_meta(new_meta)
+                else:
+                    self.meta['current_path'] = target_path
+                    self.update_file_navigation_sensitivity()
+                self.recompute_label()
+
+    def update_file_navigation_sensitivity(self):
+        parent = self.meta.get('parent', None)
+        current_path = self.meta.get('current_path', None)
+
+        has_prev, has_next = False, False
+        if parent and current_path:
+            prev_path, next_path = parent.get_next_prev_diff_file(current_path)
+            has_prev = prev_path is not None
+            has_next = next_path is not None
+
+        self.set_action_enabled('previous-file', has_prev)
+        self.set_action_enabled('next-file', has_next)
 
     def action_previous_conflict(self, *args):
         self.go_to_chunk(self.cursor.prev_conflict, self.cursor.pane)
@@ -1885,6 +1930,7 @@ class FileDiff(Gtk.Box, MeldDoc):
         if labels:
             for i, label in enumerate(labels):
                 self.filelabel[i].props.custom_label = label
+        self.update_file_navigation_sensitivity()
 
     def notify_file_changed(self, data):
         try:
