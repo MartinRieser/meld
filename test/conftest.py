@@ -4,6 +4,8 @@ import importlib.util
 import sys
 from unittest import mock
 
+import meld.ui.gtkcompat
+
 import pytest
 
 

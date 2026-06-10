@@ -95,6 +95,7 @@ if uninstalled:
     meld.conf = mod
     sys.modules['meld.conf'] = mod
 
+import meld.ui.gtkcompat
 import meld.conf  # noqa: E402
 
 # Silence warnings on non-devel releases (minor version is divisible by 2)
@@ -182,13 +183,10 @@ def show_error_and_exit(error_text):
     raise_as_last_resort_to_display = False
     try:
         import gi
-        gi.require_version("Gtk", "3.0")
+        gi.require_version("Gtk", "4.0")
         from gi.repository import Gtk
-        Gtk.MessageDialog(
-            message_type=Gtk.MessageType.ERROR,
-            buttons=Gtk.ButtonsType.CLOSE,
-            text=error_text,
-        ).run()
+        # Under GTK 4, run() is removed. Just print to terminal and rely on tkinter.
+        print(error_text)
     except Exception:
         # tkinter is imported here only to show a UI warning about
         # missing dependencies.
@@ -251,9 +249,9 @@ def check_requirements():
     # update one, update the other.
     requirements = (
         Requirement('Python', 'sys', None, 3, 6),
-        Requirement('Gtk+', 'Gtk', '3.0', 3, 22),
+        Requirement('Gtk+', 'Gtk', '4.0', 4, 0),
         Requirement('GLib', 'GLib', '2.0', 2, 48),
-        Requirement('GtkSourceView', 'GtkSource', '4', 4, 0),
+        Requirement('GtkSourceView', 'GtkSource', '5', 5, 0),
         Requirement('pygobject', 'gi', None, 3, 30),
         Requirement('pycairo', 'cairo', None, 1, 15),
     )
@@ -447,8 +445,7 @@ def environment_hacks():
 def ci_screenshot():
     # For CI, support screenshot-and-exit by setting envvars
 
-    import cairo
-    from gi.repository import Gio, GLib
+    from gi.repository import Gio, GLib, Gtk
 
     screenshot_filename = os.environ.get("MELD_SCREENSHOT_AND_EXIT")
     if not screenshot_filename:
@@ -457,13 +454,26 @@ def ci_screenshot():
     def take_screenshot():
         app = Gio.Application.get_default()
         window = app.get_windows()[0]
-        alloc = window.get_allocation()
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, alloc.width, alloc.height)
-        cr = cairo.Context(surface)
-        window.draw(cr)
-        surface.write_to_png(screenshot_filename)
-        print(f"Screenshot saved to {screenshot_filename}. Exiting.", file=sys.stderr)
-        sys.exit(0)
+        width = window.get_width()
+        height = window.get_height()
+        if width <= 0 or height <= 0:
+            w, h = window.get_default_size()
+            if w > 0: width = w
+            if h > 0: height = h
+        if width <= 0 or height <= 0:
+            width, height = 800, 600
+        paintable = Gtk.WidgetPaintable.new(window)
+        snapshot = Gtk.Snapshot()
+        paintable.snapshot(snapshot, width, height)
+        node = snapshot.to_node()
+        native = window.get_native()
+        renderer = native.get_renderer() if native else None
+        texture = renderer.render_texture(node, None) if renderer and node else None
+        if texture:
+            texture.save_to_png(screenshot_filename)
+            print(f"Screenshot saved to {screenshot_filename}. Exiting.", file=sys.stderr)
+            sys.exit(0)
+        sys.exit(1)
 
     timeout_ms = int(os.environ.get("MELD_SCREENSHOT_TIMEOUT_MS", "3000"))
     GLib.timeout_add(timeout_ms, take_screenshot)

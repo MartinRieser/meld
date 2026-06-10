@@ -48,7 +48,7 @@ def test_merge_intervals(intervals, expected):
 ])
 def test_calc_syncpoint(value, page_size, lower, upper, expected):
     import gi
-    gi.require_version("Gtk", "3.0")
+    gi.require_version("Gtk", "4.0")
     from gi.repository import Gtk
     adjustment = Gtk.Adjustment()
     adjustment.configure(value, lower, upper, 1, 1, page_size)

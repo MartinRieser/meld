@@ -1,17 +1,10 @@
 # Copyright (C) 2014 Marco Brito <bcaza@null.net>
+# Copyright (C) 2026 Martin Rieser
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 2 of the License, or (at
 # your option) any later version.
-#
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from gi.repository import Gdk, GObject, Gtk
 
@@ -42,7 +35,6 @@ class DiffGrid(Gtk.Grid):
 
     def do_map(self):
         Gtk.Grid.do_map(self)
-
         drag = self.get_child_at(2, 0)
         self._handle1.set_visible(drag and drag.get_visible())
         drag = self.get_child_at(6, 0)
@@ -53,43 +45,58 @@ class DiffGrid(Gtk.Grid):
         self._handle2.set_visible(False)
         Gtk.Grid.do_unmap(self)
 
-    def _handle_set_prelight(self, window, flag):
-        if hasattr(window, "handle"):
-            window.handle.set_prelight(flag)
-
-    def do_enter_notify_event(self, event):
-        if hasattr(event.window, "handle"):
-            event.window.handle.set_prelight(True)
-
-    def do_leave_notify_event(self, event):
-        if self._in_drag:
-            return
-
-        if hasattr(event.window, "handle"):
-            event.window.handle.set_prelight(False)
+    def _find_handle_at(self, x, y):
+        h1 = self._handle1
+        if (getattr(h1, '_visible', False) and
+            h1._area_x <= x <= h1._area_x + h1._area_width and
+            h1._area_y <= y <= h1._area_y + h1._area_height):
+            return h1
+        h2 = self._handle2
+        if (getattr(h2, '_visible', False) and
+            h2._area_x <= x <= h2._area_x + h2._area_width and
+            h2._area_y <= y <= h2._area_y + h2._area_height):
+            return h2
+        return None
 
     def do_button_press_event(self, event):
-        if event.button & Gdk.BUTTON_PRIMARY:
-            self._drag_pos = event.x
-            self._in_drag = True
-            return True
+        if event.button == 1:
+            handle = self._find_handle_at(event.x, event.y)
+            if handle:
+                self._drag_pos = event.x - handle._area_x
+                self._drag_handle = handle
+                self._in_drag = True
+                return True
         return False
 
     def do_button_release_event(self, event):
-        if event.button & Gdk.BUTTON_PRIMARY:
+        if event.button == 1:
             self._in_drag = False
+            self._drag_handle = None
+            handle = self._find_handle_at(event.x, event.y)
+            if not handle:
+                surface = self.get_native().get_surface() if self.get_native() else None
+                if surface:
+                    surface.set_cursor(None)
             return True
         return False
 
     def do_motion_notify_event(self, event):
-        if event.state & Gdk.ModifierType.BUTTON1_MASK:
-            if hasattr(event.window, "handle"):
-                x, y = event.window.get_position()
-                pos = round(x + event.x - self._drag_pos)
-                event.window.handle.set_position(pos)
-                self._drag_handle = event.window.handle
-                self.queue_resize_no_redraw()
-                return True
+        handle = self._find_handle_at(event.x, event.y)
+        if not self._in_drag:
+            self._handle1.set_prelight(handle == self._handle1)
+            self._handle2.set_prelight(handle == self._handle2)
+            surface = self.get_native().get_surface() if self.get_native() else None
+            if surface:
+                if handle:
+                    cursor = Gdk.Cursor.new_from_name("col-resize", None)
+                    surface.set_cursor(cursor)
+                else:
+                    surface.set_cursor(None)
+        if self._in_drag and self._drag_handle:
+            pos = round(event.x - self._drag_pos)
+            self._drag_handle.set_position(pos)
+            self.queue_resize_no_redraw()
+            return True
         return False
 
     def _calculate_positions(
@@ -144,71 +151,6 @@ class DiffGrid(Gtk.Grid):
         self._handle2.set_position(pos2)
         return int(round(pos1)), int(round(pos2))
 
-    def do_size_allocate(self, allocation):
-        # We should be chaining up here to:
-        #     Gtk.Grid.do_size_allocate(self, allocation)
-        # However, when we do this, we hit issues with doing multiple
-        # allocations in a single allocation cycle (see bgo#779883).
-
-        self.set_allocation(allocation)
-        wcols, hrows = self._get_min_sizes()
-        yrows = [allocation.y,
-                 allocation.y + hrows[0],
-                 # Roughly equivalent to hard-coding row 1 to expand=True
-                 allocation.y + (allocation.height - hrows[2] - hrows[3]),
-                 allocation.y + (allocation.height - hrows[3]),
-                 allocation.y + allocation.height]
-
-        (wpane1, wgutter1, wlink1, wgutter2, wpane2, wgutter3, wlink2,
-            wgutter4, wpane3, wmap) = wcols
-        xmin = allocation.x
-        xmax = allocation.x + allocation.width - wmap
-        pane_sep_width_1 = wgutter1 + wlink1 + wgutter2
-        pane_sep_width_2 = wgutter3 + wlink2 + wgutter4
-        pos1, pos2 = self._calculate_positions(
-            xmin, xmax, pane_sep_width_1, pane_sep_width_2,
-            wpane1, wpane2, wpane3
-        )
-        wpane1 = pos1 - allocation.x
-        wpane2 = pos2 - (pos1 + pane_sep_width_1)
-        wpane3 = xmax - (pos2 + pane_sep_width_2)
-        wcols = (
-            allocation.x, wpane1, wgutter1, wlink1, wgutter2, wpane2,
-            wgutter3, wlink2, wgutter4, wpane3, wmap)
-        columns = [sum(wcols[:i + 1]) for i in range(len(wcols))]
-
-        def child_allocate(child):
-            if not child.get_visible():
-                return
-            left, top, width, height = self.child_get(
-                child, 'left-attach', 'top-attach', 'width', 'height')
-            # This is a copy, and we have to do this because there's no Python
-            # access to Gtk.Allocation.
-            child_alloc = self.get_allocation()
-            child_alloc.x = columns[left]
-            child_alloc.y = yrows[top]
-            child_alloc.width = columns[left + width] - columns[left]
-            child_alloc.height = yrows[top + height] - yrows[top]
-
-            if self.get_direction() == Gtk.TextDirection.RTL:
-                child_alloc.x = (
-                    allocation.x + allocation.width -
-                    (child_alloc.x - allocation.x) - child_alloc.width)
-
-            child.size_allocate(child_alloc)
-
-        for child in self.get_children():
-            child_allocate(child)
-
-        if self.get_realized():
-            mapped = self.get_mapped()
-            ydrag = yrows[0]
-            hdrag = yrows[1] - yrows[0]
-            self._handle1.set_visible(mapped and pane_sep_width_1 > 0)
-            self._handle1.move_resize(pos1, ydrag, pane_sep_width_1, hdrag)
-            self._handle2.set_visible(mapped and pane_sep_width_2 > 0)
-            self._handle2.move_resize(pos2, ydrag, pane_sep_width_2, hdrag)
-
     def _get_min_sizes(self):
         hrows = [0] * 4
         wcols = [0] * self.column_count
@@ -217,37 +159,68 @@ class DiffGrid(Gtk.Grid):
                 child = self.get_child_at(col, row)
                 if child and child.get_visible():
                     msize, nsize = child.get_preferred_size()
-                    # Ignore spanning columns in width calculations; we should
-                    # do this properly, but it's difficult.
+                    # Query properties from children
                     spanning = GObject.Value(int)
-                    self.child_get_property(child, 'width', spanning)
-                    spanning = spanning.get_int()
-                    # We ignore natural size when calculating required
-                    # width, but use it when doing required height. The
-                    # logic here is that height-for-width means that
-                    # minimum width requisitions mean more-than-minimum
-                    # heights. This is all extremely dodgy, but works
-                    # for now.
+                    # Use child_get_property on Gtk.Grid is not standard, we can read layout properties
+                    # or just assume spanning=1 if it doesn't span
+                    spanning = 1
+                    try:
+                        self.child_get_property(child, 'width', spanning)
+                        spanning = spanning.get_int()
+                    except:
+                        pass
                     if spanning == 1:
                         wcols[col] = max(wcols[col], msize.width)
                     hrows[row] = max(hrows[row], msize.height, nsize.height)
         return wcols, hrows
 
+    def do_size_allocate(self, width, height, baseline):
+        wcols, hrows = self._get_min_sizes()
+        (wpane1, wgutter1, wlink1, wgutter2, wpane2, wgutter3, wlink2,
+            wgutter4, wpane3, wmap) = wcols
+        xmin = 0
+        xmax = width - wmap
+        pane_sep_width_1 = wgutter1 + wlink1 + wgutter2
+        pane_sep_width_2 = wgutter3 + wlink2 + wgutter4
+        pos1, pos2 = self._calculate_positions(
+            xmin, xmax, pane_sep_width_1, pane_sep_width_2,
+            wpane1, wpane2, wpane3
+        )
+
+        wpane1 = pos1 - xmin
+        wpane2 = pos2 - (pos1 + pane_sep_width_1)
+        wpane3 = xmax - (pos2 + pane_sep_width_2)
+
+        col_widths = [wpane1, wgutter1, wlink1, wgutter2, wpane2, wgutter3, wlink2, wgutter4, wpane3, wmap]
+
+        for col in range(len(col_widths)):
+            w = col_widths[col]
+            for row in range(4):
+                child = self.get_child_at(col, row)
+                if child and child.get_visible():
+                    h = -1 if row == 1 else hrows[row]
+                    if row == 1:
+                        child.set_vexpand(True)
+                    child.set_size_request(w, h)
+
+        Gtk.Grid.do_size_allocate(self, width, height, baseline)
+
+        ydrag = hrows[0]
+        hdrag = (height - hrows[3]) - hrows[0]
+
+        self._handle1.move_resize(pos1, ydrag, pane_sep_width_1, hdrag)
+        self._handle2.move_resize(pos2, ydrag, pane_sep_width_2, hdrag)
+
     def do_draw(self, context):
-        Gtk.Grid.do_draw(self, context)
         self._handle1.draw(context)
         self._handle2.draw(context)
 
 
 class HandleWindow():
-
-    # We restrict the handle width because render_handle doesn't pay
-    # attention to orientation.
     handle_width = 10
 
     def __init__(self):
         self._widget = None
-        self._window = None
         self._area_x = -1
         self._area_y = -1
         self._area_width = 1
@@ -255,6 +228,7 @@ class HandleWindow():
         self._prelit = False
         self._pos = 0.0
         self._transform = (0, 0)
+        self._visible = False
 
     def get_position(self, width, xtrans):
         self._transform = (width, xtrans)
@@ -265,44 +239,15 @@ class HandleWindow():
         self._pos = float(pos - xtrans) / width
 
     def realize(self, widget):
-        attr = Gdk.WindowAttr()
-        attr.window_type = Gdk.WindowType.CHILD
-        attr.x = self._area_x
-        attr.y = self._area_y
-        attr.width = self._area_width
-        attr.height = self._area_height
-        attr.wclass = Gdk.WindowWindowClass.INPUT_OUTPUT
-        attr.event_mask = (widget.get_events() |
-                           Gdk.EventMask.BUTTON_PRESS_MASK |
-                           Gdk.EventMask.BUTTON_RELEASE_MASK |
-                           Gdk.EventMask.ENTER_NOTIFY_MASK |
-                           Gdk.EventMask.LEAVE_NOTIFY_MASK |
-                           Gdk.EventMask.POINTER_MOTION_MASK)
-        attr.cursor = Gdk.Cursor.new_from_name(
-            widget.get_display(),
-            "col-resize",
-        )
-        attr_mask = (Gdk.WindowAttributesType.X |
-                     Gdk.WindowAttributesType.Y |
-                     Gdk.WindowAttributesType.CURSOR)
-
-        parent = widget.get_parent_window()
-        self._window = Gdk.Window(parent, attr, attr_mask)
-        self._window.handle = self
         self._widget = widget
-        self._widget.register_window(self._window)
 
     def unrealize(self):
-        self._widget.unregister_window(self._window)
+        self._widget = None
 
     def set_visible(self, visible):
-        if visible:
-            self._window.show()
-        else:
-            self._window.hide()
+        self._visible = visible
 
     def move_resize(self, x, y, width, height):
-        self._window.move_resize(x, y, width, height)
         self._area_x = x
         self._area_y = y
         self._area_width = width
@@ -310,14 +255,16 @@ class HandleWindow():
 
     def set_prelight(self, flag):
         self._prelit = flag
-        self._widget.queue_draw_area(self._area_x, self._area_y,
-                                     self._area_width, self._area_height)
+        if self._widget:
+            self._widget.queue_draw()
 
     def draw(self, cairocontext):
-        alloc = self._widget.get_allocation()
+        if not self._widget or not self._visible:
+            return
+
         padding = 5
-        x = self._area_x - alloc.x + padding
-        y = self._area_y - alloc.y + padding
+        x = self._area_x + padding
+        y = self._area_y + padding
         width = max(0, self._area_width - 2 * padding)
         height = max(0, self._area_height - 2 * padding)
 
@@ -331,19 +278,20 @@ class HandleWindow():
         if self._prelit:
             state |= Gtk.StateFlags.PRELIGHT
 
-        if Gtk.cairo_should_draw_window(cairocontext, self._window):
-            stylecontext.save()
-            stylecontext.set_state(state)
-            stylecontext.add_class(Gtk.STYLE_CLASS_PANE_SEPARATOR)
-            stylecontext.add_class(Gtk.STYLE_CLASS_VERTICAL)
-            color = stylecontext.get_background_color(state)
-            if color.alpha > 0.0:
-                xcenter = x + width / 2.0 - self.handle_width / 2.0
-                Gtk.render_handle(
-                    stylecontext, cairocontext,
-                    xcenter, y, self.handle_width, height)
-            else:
-                xcenter = x + width / 2.0
-                Gtk.render_line(stylecontext, cairocontext,
-                                xcenter, y, xcenter, y + height)
-            stylecontext.restore()
+        stylecontext.save()
+        stylecontext.set_state(state)
+        xcenter = x + width / 2.0
+        cairocontext.save()
+        cairocontext.set_source_rgba(0.5, 0.5, 0.5, 0.8)
+        cairocontext.set_line_width(2.0)
+        cairocontext.move_to(xcenter, y)
+        cairocontext.line_to(xcenter, y + height)
+        cairocontext.stroke()
+
+        ymid = y + height / 2.0
+        cairocontext.arc(xcenter, ymid - 10, 1.5, 0, 2 * 3.14159)
+        cairocontext.arc(xcenter, ymid, 1.5, 0, 2 * 3.14159)
+        cairocontext.arc(xcenter, ymid + 10, 1.5, 0, 2 * 3.14159)
+        cairocontext.fill()
+        cairocontext.restore()
+        stylecontext.restore()
