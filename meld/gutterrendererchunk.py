@@ -24,7 +24,7 @@ from meld.ui.gtkutil import make_gdk_rgba
 
 
 def get_background_rgba(renderer):
-    '''Get and cache the expected background for the renderer widget
+    """Get and cache the expected background for the renderer widget
 
     Current versions of GTK+ don't paint the background of text view
     gutters with the actual expected widget background, which causes
@@ -33,13 +33,14 @@ def get_background_rgba(renderer):
     it for performance, and on the basis that all renderers will be
     assigned to similarly-styled views. This is fragile, but the
     alternative is really significantly slower.
-    '''
+    """
     global _background_rgba
     if _background_rgba is None:
         if renderer.props.view:
             stylecontext = renderer.props.view.get_style_context()
-            background_set, _background_rgba = (
-                stylecontext.lookup_color('theme_bg_color'))
+            background_set, _background_rgba = stylecontext.lookup_color(
+                "theme_bg_color"
+            )
     return _background_rgba
 
 
@@ -47,7 +48,6 @@ _background_rgba = None
 
 
 class MeldGutterRenderer:
-
     def set_renderer_defaults(self):
         self.set_alignment_mode(GtkSource.GutterRendererAlignmentMode.FIRST)
         self.props.xpad = 3
@@ -56,17 +56,20 @@ class MeldGutterRenderer:
         self.props.yalign = 0.5
 
     def on_setting_changed(self, settings, key):
-        if key == 'style-scheme':
+        if key == "style-scheme":
             self.fill_colors, self.line_colors = get_common_theme()
-            alpha = self.fill_colors['current-chunk-highlight'].alpha
+            alpha = self.fill_colors["current-chunk-highlight"].alpha
             self.chunk_highlights = {
-                state: make_gdk_rgba(*[alpha + c * (1.0 - alpha) for c in colour])
+                state: make_gdk_rgba(
+                    alpha + colour.red * (1.0 - alpha),
+                    alpha + colour.green * (1.0 - alpha),
+                    alpha + colour.blue * (1.0 - alpha),
+                    alpha + colour.alpha * (1.0 - alpha),
+                )
                 for state, colour in self.fill_colors.items()
             }
 
-    def draw_chunks(
-            self, context, background_area, cell_area, start, end, state):
-
+    def draw_chunks(self, context, background_area, cell_area, start, end, state):
         chunk = self._chunk
         if not chunk:
             return
@@ -100,8 +103,7 @@ class MeldGutterRenderer:
 
         chunk = None
         if in_chunk:
-            chunk = self.linediffer.get_chunk(
-                chunk_index, self.from_pane, self.to_pane)
+            chunk = self.linediffer.get_chunk(chunk_index, self.from_pane, self.to_pane)
 
         if chunk is not None:
             if chunk[1] == chunk[2]:
@@ -124,8 +126,7 @@ class MeldGutterRenderer:
 # Python reimplementation is Copyright (C) 2015 Kai Willadsen
 
 
-class GutterRendererChunkLines(
-        GtkSource.GutterRendererText, MeldGutterRenderer):
+class GutterRendererChunkLines(GtkSource.GutterRendererText, MeldGutterRenderer):
     __gtype_name__ = "GutterRendererChunkLines"
 
     def __init__(self, from_pane, to_pane, linediffer):
@@ -140,9 +141,9 @@ class GutterRendererChunkLines(
         self.changed_handler_id = None
 
         meld_settings = get_meld_settings()
-        meld_settings.connect('changed', self.on_setting_changed)
+        meld_settings.connect("changed", self.on_setting_changed)
         self.font_string = meld_settings.font.to_string()
-        self.on_setting_changed(meld_settings, 'style-scheme')
+        self.on_setting_changed(meld_settings, "style-scheme")
 
         self.connect("notify::view", self.on_view_changed)
 
@@ -172,8 +173,7 @@ class GutterRendererChunkLines(
         if view:
             buf = view.get_buffer()
             if buf:
-                self.changed_handler_id = buf.connect(
-                    "changed", self.recalculate_size)
+                self.changed_handler_id = buf.connect("changed", self.recalculate_size)
                 self.recalculate_size(buf)
 
     def _measure_markup(self, markup):
@@ -187,7 +187,6 @@ class GutterRendererChunkLines(
         buf: GtkSource.Buffer,
         force: bool = False,
     ) -> None:
-
         # Always calculate display size for at least two-digit line counts
         num_lines = max(buf.get_line_count(), 99)
         num_digits = int(math.ceil(math.log(num_lines, 10)))
@@ -202,9 +201,9 @@ class GutterRendererChunkLines(
 
     def do_draw(self, context, background_area, cell_area, start, end, state):
         GtkSource.GutterRendererText.do_draw(
-            self, context, background_area, cell_area, start, end, state)
-        self.draw_chunks(
-            context, background_area, cell_area, start, end, state)
+            self, context, background_area, cell_area, start, end, state
+        )
+        self.draw_chunks(context, background_area, cell_area, start, end, state)
 
     def do_query_data(self, start, end, state):
         self.query_chunks(start, end, state)
