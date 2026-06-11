@@ -1123,6 +1123,33 @@ if hasattr(GtkSource, 'Map'):
 Gtk.Window.get_size = lambda self: (self.get_width(), self.get_height())
 
 
+# Gtk.StyleContext overrides to prevent C-level segfaults in GTK 4
+original_get_style_context = Gtk.Widget.get_style_context
+def compat_get_style_context(self):
+    ctx = original_get_style_context(self)
+    ctx._widget = self
+    return ctx
+Gtk.Widget.get_style_context = compat_get_style_context
+
+def compat_style_context_get_state(self):
+    widget = getattr(self, '_widget', None)
+    if widget:
+        return widget.get_state_flags()
+    return Gtk.StateFlags.NORMAL
+
+Gtk.StyleContext.get_state = compat_style_context_get_state
+Gtk.StyleContext.set_state = lambda self, state: None
+Gtk.StyleContext.save = lambda self: None
+Gtk.StyleContext.restore = lambda self: None
+
+# Dummy GTK 3 style event virtual methods to prevent AttributeError on superclass calls
+Gtk.Widget.do_button_press_event = lambda self, event: False
+Gtk.Widget.do_button_release_event = lambda self, event: False
+Gtk.Widget.do_motion_notify_event = lambda self, event: False
+Gtk.Widget.do_scroll_event = lambda self, event: False
+
+
+
 
 
 

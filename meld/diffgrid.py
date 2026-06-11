@@ -406,15 +406,6 @@ class HandleWindow():
         if width == 0 or height == 0:
             return
 
-        stylecontext = self._widget.get_style_context()
-        state = stylecontext.get_state()
-        if self._widget.is_focus():
-            state |= Gtk.StateFlags.SELECTED
-        if self._prelit:
-            state |= Gtk.StateFlags.PRELIGHT
-
-        stylecontext.save()
-        stylecontext.set_state(state)
         xcenter = x + width / 2.0
         cairocontext.save()
         cairocontext.set_source_rgba(0.5, 0.5, 0.5, 0.8)
@@ -429,4 +420,3 @@ class HandleWindow():
         cairocontext.arc(xcenter, ymid + 10, 1.5, 0, 2 * 3.14159)
         cairocontext.fill()
         cairocontext.restore()
-        stylecontext.restore()
