@@ -106,12 +106,12 @@ jobs:
           meson setup --prefix=$INSTALL_DIR build
           meson compile -v -C build
           meson install -C build
-          cp windows/meld.spec "$INSTALL_DIR/"
-          cp windows/meld.nsis "$INSTALL_DIR/"
+          cp "$GITHUB_WORKSPACE/windows/meld.spec" "$INSTALL_DIR/"
+          cp "$GITHUB_WORKSPACE/windows/meld.nsis" "$INSTALL_DIR/"
           cd "$INSTALL_DIR"
-          pyinstaller ./meld.spec
+          python -m PyInstaller meld.spec
           cp version.nsh dist/
-          cp ../../windows/meld.nsis dist/
+          cp "$GITHUB_WORKSPACE/windows/meld.nsis" dist/
           cd dist
           makensis ./meld.nsis
 
@@ -139,7 +139,7 @@ jobs:
       - name: Install system dependencies
         run: |
           brew update
-          brew install gtk4 gtksourceview5 gobject-introspection cairo meson pkg-config librsvg itstool
+          brew install gtk4 gtksourceview5 gobject-introspection cairo meson pkg-config librsvg itstool desktop-file-utils
 
       - uses: actions/setup-python@v5
         with:
