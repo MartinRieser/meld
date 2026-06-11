@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-      - name: Install system dependencies (Linux)
+      - name: Install system dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
@@ -54,13 +54,16 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install -r dev-requirements.txt
-      - name: Build and install PyGObject (macOS)
+      - name: Build PyGObject from source (macOS)
         if: runner.os == 'macOS'
         run: |
           pip install --no-binary :all: pycairo PyGObject
-      - name: Run tests (Linux)
+      - name: Run tests (Ubuntu)
         if: runner.os == 'Linux'
-        run: xvfb-run pytest -v
+        run: |
+          PYTHONPATH=/usr/lib/python3/dist-packages:$PYTHONPATH xvfb-run pytest -v
       - name: Run tests (macOS)
         if: runner.os == 'macOS'
-        run: pytest -v
+        run: |
+          export DYLD_FALLBACK_LIBRARY_PATH=$(brew --prefix)/lib
+          pytest -v
