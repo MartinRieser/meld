@@ -102,12 +102,13 @@ jobs:
 
       - name: Build and package with PyInstaller and NSIS
         run: |
-          meson setup --prefix=/ build
+          INSTALL_DIR=$PWD/build/install
+          meson setup --prefix=$INSTALL_DIR build
           meson compile -v -C build
-          meson install -C build --destdir=install
-          cp windows/meld.spec install/
-          cp windows/meld.nsis install/
-          cd install
+          meson install -C build
+          cp windows/meld.spec "$INSTALL_DIR/"
+          cp windows/meld.nsis "$INSTALL_DIR/"
+          cd "$INSTALL_DIR"
           pyinstaller ./meld.spec
           cp version.nsh dist/
           cp ../../windows/meld.nsis dist/
