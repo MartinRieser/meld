@@ -93,6 +93,8 @@ jobs:
             mingw-w64-ucrt-x86_64-desktop-file-utils
             mingw-w64-ucrt-x86_64-gsettings-desktop-schemas
             mingw-w64-ucrt-x86_64-gtk-update-icon-cache
+            mingw-w64-ucrt-x86_64-python-yaml
+            mingw-w64-ucrt-x86_64-python-packaging
 
       - name: Install Python dependencies
         run: pip install pyinstaller-versionfile
@@ -150,6 +152,19 @@ jobs:
 
       - name: Build and install Meld
         run: |
+          PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig
+          cat > /tmp/pygobject-3.0.pc << 'EOF'
+          prefix=/usr
+          exec_prefix=${prefix}
+          libdir=${exec_prefix}/lib
+          includedir=${prefix}/include
+          Name: PyGObject
+          Description: Python GObject bindings
+          Version: 3.46.0
+          Libs:
+          Cflags:
+          EOF
+          sudo cp /tmp/pygobject-3.0.pc "$PKG_CONFIG_PATH/"
           meson setup --prefix=/ build
           meson compile -v -C build
           meson install -C build --destdir=install
