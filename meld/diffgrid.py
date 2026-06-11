@@ -6,7 +6,7 @@
 # the Free Software Foundation, either version 2 of the License, or (at
 # your option) any later version.
 
-from gi.repository import Gdk, GObject, Gtk, Gsk, Graphene
+from gi.repository import Gdk, GObject, Graphene, Gsk, Gtk
 
 
 class DiffGridLayoutChild(Gtk.LayoutChild):

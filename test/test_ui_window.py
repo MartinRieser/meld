@@ -1,9 +1,10 @@
-import pytest
-from gi.repository import Gio, Gtk
+from gi.repository import Gio
+
+from meld.filediff import FileDiff
 from meld.meldapp import MeldApp
 from meld.meldwindow import MeldWindow
 from meld.newdifftab import NewDiffTab
-from meld.filediff import FileDiff
+
 
 def test_meld_window_creation():
     app = MeldApp()

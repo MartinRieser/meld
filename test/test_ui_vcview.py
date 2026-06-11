@@ -1,10 +1,9 @@
 import os
 import subprocess
-import pytest
-from unittest import mock
-from gi.repository import Gio
-from meld.vcview import VcView
+
 from meld.vc import _vc
+from meld.vcview import VcView
+
 
 def test_vcview_instantiation():
     vcview = VcView()

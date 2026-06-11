@@ -1,6 +1,7 @@
-import pytest
-from gi.repository import Gio, Gtk
+from gi.repository import Gio
+
 from meld.filediff import FileDiff
+
 
 def test_filediff_instantiation():
     filediff = FileDiff(2)
@@ -76,7 +77,9 @@ def test_filediff_delete_chunk():
 
 def test_filediff_save_file(tmp_path):
     import time
+
     from gi.repository import GLib
+
     from meld.meldbuffer import MeldBufferState
 
     # Create temporary files

@@ -1,7 +1,9 @@
-
+import logging
 from typing import Optional
 
 from gi.repository import Gio, GObject, Gtk
+
+log = logging.getLogger(__name__)
 
 
 class MeldFileButton(Gtk.Button):
@@ -15,44 +17,31 @@ class MeldFileButton(Gtk.Button):
     pane: int = GObject.Property(
         type=int,
         nick="Index of pane associated with this file selector",
-        flags=(
-            GObject.ParamFlags.READWRITE |
-            GObject.ParamFlags.CONSTRUCT_ONLY
-        ),
+        flags=(GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY),
     )
 
     action: Gtk.FileChooserAction = GObject.Property(
         type=Gtk.FileChooserAction,
         nick="File selector action",
-        flags=(
-            GObject.ParamFlags.READWRITE |
-            GObject.ParamFlags.CONSTRUCT_ONLY
-        ),
+        flags=(GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY),
         default=Gtk.FileChooserAction.OPEN,
     )
 
     local_only: bool = GObject.Property(
         type=bool,
         nick="Whether selected files should be limited to local file:// URIs",
-        flags=(
-            GObject.ParamFlags.READWRITE |
-            GObject.ParamFlags.CONSTRUCT_ONLY
-        ),
+        flags=(GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY),
         default=True,
     )
 
     dialog_label: str = GObject.Property(
         type=str,
         nick="Label for the file selector dialog",
-        flags=(
-            GObject.ParamFlags.READWRITE |
-            GObject.ParamFlags.CONSTRUCT_ONLY
-        ),
+        flags=(GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY),
     )
 
-    @GObject.Signal('file-selected')
-    def file_selected_signal(self, pane: int, file: Gio.File) -> None:
-        ...
+    @GObject.Signal("file-selected")
+    def file_selected_signal(self, pane: int, file: Gio.File) -> None: ...
 
     icon_action_map = {
         Gtk.FileChooserAction.OPEN: "document-open-symbolic",
@@ -63,14 +52,15 @@ class MeldFileButton(Gtk.Button):
         Gtk.Button.do_realize(self)
 
         image = Gtk.Image.new_from_icon_name(
-            self.icon_action_map[self.action], Gtk.IconSize.BUTTON)
+            self.icon_action_map[self.action], Gtk.IconSize.BUTTON
+        )
         self.set_image(image)
 
     def do_clicked(self) -> None:
         dialog = Gtk.FileDialog.new()
         dialog.set_title(self.dialog_label or "Select Folder")
 
-        is_folder = (self.action == Gtk.FileChooserAction.SELECT_FOLDER)
+        is_folder = self.action == Gtk.FileChooserAction.SELECT_FOLDER
 
         if self.file:
             dialog.set_initial_file(self.file)
@@ -83,7 +73,7 @@ class MeldFileButton(Gtk.Button):
                     gfile = obj.open_finish(result)
                 if gfile:
                     self.file = gfile
-                    self.emit('file-selected', self.pane, self.file)
+                    self.emit("file-selected", self.pane, self.file)
             except Exception as e:
                 log.error("File dialog failed: %s", e)
 

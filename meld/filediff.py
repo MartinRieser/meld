@@ -48,15 +48,6 @@ from meld.meldbuffer import (
 )
 from meld.melddoc import ComparisonState, MeldDoc
 from meld.menuhelpers import replace_menu_section
-from meld.diffgrid import DiffGrid
-from meld.ui.filebutton import MeldFileButton
-from meld.ui.pathlabel import PathLabel
-from meld.ui.msgarea import MsgAreaController
-from meld.linkmap import LinkMap
-from meld.ui.statusbar import MeldStatusBar
-from meld.actiongutter import ActionGutter
-from meld.chunkmap import ChunkMap
-from meld.sourceview import MeldSourceView
 from meld.misc import user_critical, with_focused_pane
 from meld.patchdialog import PatchDialog
 from meld.recent import RecentType

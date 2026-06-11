@@ -1,8 +1,10 @@
 import os
-import pytest
 from unittest import mock
-from gi.repository import Gio, Gtk
+
+from gi.repository import Gio
+
 from meld.dirdiff import DirDiff
+
 
 def test_dirdiff_instantiation():
     dirdiff = DirDiff(2)

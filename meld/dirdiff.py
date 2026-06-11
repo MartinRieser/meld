@@ -23,7 +23,6 @@ import os
 import shutil
 import stat
 import sys
-import typing
 import unicodedata
 from collections import namedtuple
 from decimal import Decimal
@@ -50,12 +49,8 @@ from meld.ui.cellrenderers import (
     CellRendererISODate,
 )
 from meld.ui.emblemcellrenderer import EmblemCellRenderer
-from meld.ui.util import map_widgets_into_lists
-from meld.ui.filebutton import MeldFileButton
 from meld.ui.pathlabel import PathLabel
-from meld.linkmap import ScrollLinkMap
-from meld.ui.msgarea import MsgAreaController
-from meld.chunkmap import TreeViewChunkMap
+from meld.ui.util import map_widgets_into_lists
 
 log = logging.getLogger(__name__)
 

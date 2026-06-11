@@ -4,8 +4,6 @@ import importlib.util
 import sys
 from unittest import mock
 
-import meld.ui.gtkcompat
-
 import pytest
 
 
@@ -48,7 +46,9 @@ import_meld_conf()
 def setup_test_resources_and_settings():
     import os
     import subprocess
+
     from gi.repository import Gio, GtkSource
+
     import meld
     from meld.settings import create_settings
 
