@@ -227,6 +227,8 @@ jobs:
             gsettings-desktop-schemas \
             gettext \
             desktop-file-utils \
+            itstool \
+            libxml2-utils \
             meson
 
       - name: Build and install to DESTDIR
