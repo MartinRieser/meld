@@ -169,6 +169,8 @@ Gtk.Widget.get_border_width = lambda self: self.get_margin_start()
 
 # show_all is no-op
 Gtk.Widget.show_all = lambda self: None
+Gtk.Widget.show = lambda self: self.set_visible(True)
+Gtk.Widget.hide = lambda self: self.set_visible(False)
 Gtk.Widget.ensure_style = lambda self: None
 Gtk.Widget.set_events = lambda self, events: None
 Gtk.Widget.get_events = lambda self: 0
@@ -247,7 +249,7 @@ def widget_override_font(self, font_desc):
     else:
         css = f"* {{ font-family: '{font_str}'; }}"
     provider = Gtk.CssProvider()
-    provider.load_from_data(css.encode('utf-8'))
+    provider.load_from_string(css)
     self.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 Gtk.Widget.override_font = widget_override_font
 

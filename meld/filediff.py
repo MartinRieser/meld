@@ -637,7 +637,7 @@ class FileDiff(Gtk.Box, MeldDoc):
             self.textview[2].set_editable(0)
 
     def bind_adapt_cursor_position(self, binding, from_value):
-        buf = binding.get_source()
+        buf = binding.props.source
         textview = self.textview[self.textbuffer.index(buf)]
 
         cursor_it = buf.get_iter_at_offset(from_value)

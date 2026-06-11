@@ -155,8 +155,10 @@ class MeldBufferData(GObject.GObject):
             info = gfile.query_info(time_query, 0, None)
         except GLib.GError:
             return None
-        mtime = info.get_modification_time()
-        return (mtime.tv_sec, mtime.tv_usec)
+        dt = info.get_modification_date_time()
+        if not dt:
+            return None
+        return (dt.to_unix(), dt.get_microsecond())
 
     def _handle_file_change(self, monitor, f, other_file, event_type):
         mtime = self._query_mtime(f)

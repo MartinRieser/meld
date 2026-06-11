@@ -73,7 +73,7 @@ class MeldNotebook(Gtk.Notebook):
     """
 
     provider = Gtk.CssProvider()
-    provider.load_from_data(css)
+    provider.load_from_string(css.decode('utf-8'))
     Gtk.StyleContext.add_provider_for_screen(
         Gdk.Screen.get_default(),
         provider,

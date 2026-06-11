@@ -37,7 +37,7 @@ class MeldStatusMenuButton(Gtk.MenuButton):
     """
 
     css_provider = Gtk.CssProvider()
-    css_provider.load_from_data(style)
+    css_provider.load_from_string(style.decode('utf-8'))
 
     def get_label(self):
         return self._label.get_text()
