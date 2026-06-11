@@ -61,7 +61,7 @@ def copy_repo_files():
 copy_repo_files()
 version = get_version()
 version_string = f"{version.major}.{version.minor}.{version.micro}"
-copyright = "Copyright © 2002-2006 Stephen Kennedy, 2008-2025 Kai Willadsen"
+copyright = "Copyright © 2002-2006 Stephen Kennedy, 2008-2026 Kai Willadsen"
 
 # Insert the site-packages path that's been installed by meson/ninja into
 # PYTHONPATH so that pyinstaller finds the meld package from there.
@@ -82,8 +82,8 @@ a = Analysis(
             "themes": ["Adwaita"],
             "languages": get_install_languages(),
             "module-versions": {
-                "Gtk": "3.0",
-                "GtkSource": "4",
+                "Gtk": "4.0",
+                "GtkSource": "5",
             },
         },
     },
