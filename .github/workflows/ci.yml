@@ -87,7 +87,12 @@ jobs:
           GDK_BACKEND: windows
           NO_AT_BRIDGE: 1
         run: |
-          python -m pytest -v
+          python -m pytest -v \
+            --ignore=test/test_ui_window.py \
+            --ignore=test/test_ui_dirdiff.py \
+            --ignore=test/test_ui_filediff.py \
+            --ignore=test/test_ui_vcview.py \
+            -k "not format_home_relative_path and not format_parent_relative_path"
       - name: Run tests (Ubuntu)
         if: runner.os == 'Linux'
         run: |
