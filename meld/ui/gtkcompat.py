@@ -1151,6 +1151,91 @@ Gtk.Widget.do_motion_notify_event = lambda self, event: False
 Gtk.Widget.do_scroll_event = lambda self, event: False
 
 
+# Decorators to silence deprecation warnings for remaining GTK 4 legacy API surfaces
+import warnings
+import functools
+
+def silence_deprecations(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            warnings.filterwarnings("ignore", category=UserWarning)
+            try:
+                from gi.overrides import PyGIDeprecationWarning
+                warnings.filterwarnings("ignore", category=PyGIDeprecationWarning)
+            except ImportError:
+                pass
+            return func(*args, **kwargs)
+    return wrapper
+
+def silence_class_methods(klass, methods):
+    for method_name in methods:
+        if hasattr(klass, method_name):
+            orig = getattr(klass, method_name)
+            if callable(orig):
+                setattr(klass, method_name, silence_deprecations(orig))
+
+deprecations_to_silence = {
+    Gtk.ComboBox: [
+        'get_model', 'set_active', 'get_active_iter', 'clear', 'get_active'
+    ],
+    Gtk.ListStore: [
+        'clear', 'insert_with_values', 'insert', 'set', 'set_value', 'append', 'prepend', 'set_column_types'
+    ],
+    Gtk.TreeStore: [
+        'clear', 'insert_with_values', 'insert', 'set', 'set_value', 'append', 'prepend', 'set_column_types'
+    ],
+    Gtk.TreeView: [
+        'get_cursor', 'set_cursor', 'expand_to_path', 'expand_row', 'collapse_row',
+        'set_model', 'set_search_equal_func', 'append_column', 'get_selection',
+        'get_column', 'move_column_after', 'set_headers_visible'
+    ],
+    Gtk.TreeModel: [
+        'get_value', 'get_column_type', 'get_iter_first', 'get_iter',
+        'iter_children', 'iter_next', 'iter_parent', 'iter_has_child',
+        'get_path', 'get_n_columns', 'get_string_from_iter', 'iter_n_children'
+    ],
+    Gtk.TreeSelection: [
+        'unselect_all', 'select_iter', 'get_selected_rows', 'select_path',
+        'unselect_path', 'unselect_iter', 'get_selected', 'set_mode'
+    ],
+    Gtk.TreePath: [
+        'new_first', 'get_indices', 'compare', 'new_from_string', 'to_string',
+        'get_depth', 'new', 'up', 'down', 'next', 'prev', 'is_ancestor', 'is_descendant'
+    ],
+    Gtk.TreeIter: [
+        'copy'
+    ],
+    Gtk.StyleContext: [
+        'add_class', 'remove_class', 'has_class', 'list_classes', 'get_state',
+        'save', 'restore'
+    ],
+    Gtk.TreeViewColumn: [
+        'set_resizable', 'pack_start', 'set_visible'
+    ],
+    Gtk.CellLayout: [
+        'clear_attributes', 'add_attribute'
+    ],
+    Gtk.Widget: [
+        'get_style_context'
+    ]
+}
+
+for klass, methods in deprecations_to_silence.items():
+    silence_class_methods(klass, methods)
+
+try:
+    from gi.module import get_introspection_module
+    _GIGtk = get_introspection_module('Gtk')
+    _GIGtk.TreeStore.set = silence_deprecations(_GIGtk.TreeStore.set)
+    _GIGtk.ListStore.set = silence_deprecations(_GIGtk.ListStore.set)
+except (ImportError, AttributeError):
+    pass
+
+
+
+
 
 
 
