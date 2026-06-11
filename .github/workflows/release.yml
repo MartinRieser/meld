@@ -139,7 +139,7 @@ jobs:
       - name: Install system dependencies
         run: |
           brew update
-          brew install gtk4 gtksourceview5 gobject-introspection cairo meson pkg-config librsvg
+          brew install gtk4 gtksourceview5 gobject-introspection cairo meson pkg-config librsvg itstool
 
       - uses: actions/setup-python@v5
         with:
