@@ -6,10 +6,143 @@
 # the Free Software Foundation, either version 2 of the License, or (at
 # your option) any later version.
 
-from gi.repository import Gdk, GObject, Gtk
+from gi.repository import Gdk, GObject, Gtk, Gsk, Graphene
 
 
-class DiffGrid(Gtk.Grid):
+class DiffGridLayoutChild(Gtk.LayoutChild):
+    """Layout child for DiffGrid, storing grid position and span.
+
+    We use a custom LayoutChild (not GtkGridLayoutChild) because
+    DiffGridLayout subclasses Gtk.LayoutManager directly rather
+    than Gtk.GridLayout.
+    """
+
+    column = GObject.Property(type=int, default=0)
+    row = GObject.Property(type=int, default=0)
+    column_span = GObject.Property(type=int, default=1)
+    row_span = GObject.Property(type=int, default=1)
+
+    def get_column(self):
+        return self.props.column
+
+    def set_column(self, value):
+        self.props.column = value
+
+    def get_row(self):
+        return self.props.row
+
+    def set_row(self, value):
+        self.props.row = value
+
+    def get_column_span(self):
+        return self.props.column_span
+
+    def set_column_span(self, value):
+        self.props.column_span = value
+
+    def get_row_span(self):
+        return self.props.row_span
+
+    def set_row_span(self, value):
+        self.props.row_span = value
+
+
+class DiffGridLayout(Gtk.LayoutManager):
+    """Custom layout manager for DiffGrid.
+
+    We subclass Gtk.LayoutManager directly (not Gtk.GridLayout) because
+    PyGObject cannot override do_allocate on Gtk.GridLayout subclasses:
+    the C-level vtable entry takes precedence over the Python override,
+    causing our custom allocation logic to be silently skipped.
+    """
+
+    def do_create_layout_child(self, widget, for_child):
+        return DiffGridLayoutChild(
+            layout_manager=self, child_widget=for_child)
+
+    def do_measure(self, widget, orientation, for_size):
+        wcols, hrows = widget._get_min_sizes()
+        if orientation == Gtk.Orientation.HORIZONTAL:
+            total = sum(wcols)
+            return total, max(total, 1), -1, -1
+        else:
+            total = sum(hrows)
+            return total, max(total, 1), -1, -1
+
+    def do_allocate(self, widget, width, height, baseline):
+        wcols, hrows = widget._get_min_sizes()
+        (wpane1, wgutter1, wlink1, wgutter2, wpane2, wgutter3, wlink2,
+            wgutter4, wpane3, wmap) = wcols
+        xmin = 0
+        xmax = width - wmap
+        pane_sep_width_1 = wgutter1 + wlink1 + wgutter2
+        pane_sep_width_2 = wgutter3 + wlink2 + wgutter4
+        pos1, pos2 = widget._calculate_positions(
+            xmin, xmax, pane_sep_width_1, pane_sep_width_2,
+            wpane1, wpane2, wpane3
+        )
+
+        wpane1 = pos1 - xmin
+        wpane2 = pos2 - (pos1 + pane_sep_width_1)
+        wpane3 = xmax - (pos2 + pane_sep_width_2)
+
+        col_widths = [wpane1, wgutter1, wlink1, wgutter2, wpane2, wgutter3, wlink2, wgutter4, wpane3, wmap]
+
+        col_xs = [0] * len(col_widths)
+        cur_x = 0
+        for i, w in enumerate(col_widths):
+            col_xs[i] = cur_x
+            cur_x += w
+
+        row_ys = [0] * 4
+        cur_y = 0
+        for i, h in enumerate(hrows):
+            row_ys[i] = cur_y
+            cur_y += h
+
+        layout = widget.get_layout_manager()
+        child = widget.get_first_child()
+        while child:
+            if child.get_visible():
+                layout_child = layout.get_layout_child(child)
+                if layout_child:
+                    col = layout_child.get_column()
+                    row = layout_child.get_row()
+                    colspan = layout_child.get_column_span()
+                    rowspan = layout_child.get_row_span()
+
+                    child_w = sum(col_widths[col:col+colspan])
+
+                    if row == 1:
+                        child_h = height - hrows[0] - hrows[2] - hrows[3]
+                    else:
+                        child_h = sum(hrows[row:row+rowspan])
+
+                    child_x = col_xs[col]
+                    if row > 1:
+                        row1_h = height - hrows[0] - hrows[2] - hrows[3]
+                        if row == 2:
+                            child_y = hrows[0] + row1_h
+                        else:  # row == 3
+                            child_y = hrows[0] + row1_h + hrows[2]
+                    else:
+                        child_y = row_ys[row]
+
+                    p = Graphene.Point()
+                    p.x = child_x
+                    p.y = child_y
+                    transform = Gsk.Transform.new().translate(p)
+                    child.allocate(child_w, child_h, baseline, transform)
+            child = child.get_next_sibling()
+
+        ydrag = hrows[0]
+        hdrag = (height - hrows[3]) - hrows[0]
+
+        widget._handle1.move_resize(pos1, ydrag, pane_sep_width_1, hdrag)
+        widget._handle2.move_resize(pos2, ydrag, pane_sep_width_2, hdrag)
+
+
+class DiffGrid(Gtk.Widget):
     __gtype_name__ = "DiffGrid"
 
     column_count = 10
@@ -17,24 +150,64 @@ class DiffGrid(Gtk.Grid):
 
     def __init__(self):
         super().__init__()
+        self.set_layout_manager(DiffGridLayout())
         self._in_drag = False
         self._drag_pos = -1
         self._drag_handle = None
         self._handle1 = HandleWindow()
         self._handle2 = HandleWindow()
 
+    def attach(self, child, col, row, width, height):
+        child.set_parent(self)
+        layout = self.get_layout_manager()
+        layout_child = layout.get_layout_child(child)
+        layout_child.set_column(col)
+        layout_child.set_row(row)
+        layout_child.set_column_span(width)
+        layout_child.set_row_span(height)
+
+    def get_child_at(self, col, row):
+        layout = self.get_layout_manager()
+        child = self.get_first_child()
+        while child:
+            layout_child = layout.get_layout_child(child)
+            if layout_child:
+                if layout_child.get_column() == col and layout_child.get_row() == row:
+                    return child
+            child = child.get_next_sibling()
+        return None
+
+    def child_get_property(self, child, property_name, value):
+        layout = self.get_layout_manager()
+        layout_child = layout.get_layout_child(child)
+        if layout_child:
+            prop_map = {
+                'left-attach': 'column',
+                'top-attach': 'row',
+                'width': 'column-span',
+                'height': 'row-span',
+            }
+            mapped_name = prop_map.get(property_name, property_name)
+            val = layout_child.get_property(mapped_name)
+            if hasattr(value, 'set_int'):
+                value.set_int(val)
+            elif hasattr(value, 'set_boolean'):
+                value.set_boolean(val)
+            else:
+                value = val
+
     def do_realize(self):
-        Gtk.Grid.do_realize(self)
+        Gtk.Widget.do_realize(self)
         self._handle1.realize(self)
         self._handle2.realize(self)
 
     def do_unrealize(self):
         self._handle1.unrealize()
         self._handle2.unrealize()
-        Gtk.Grid.do_unrealize(self)
+        Gtk.Widget.do_unrealize(self)
 
     def do_map(self):
-        Gtk.Grid.do_map(self)
+        Gtk.Widget.do_map(self)
         drag = self.get_child_at(2, 0)
         self._handle1.set_visible(drag and drag.get_visible())
         drag = self.get_child_at(6, 0)
@@ -43,7 +216,7 @@ class DiffGrid(Gtk.Grid):
     def do_unmap(self):
         self._handle1.set_visible(False)
         self._handle2.set_visible(False)
-        Gtk.Grid.do_unmap(self)
+        Gtk.Widget.do_unmap(self)
 
     def _find_handle_at(self, x, y):
         h1 = self._handle1
@@ -95,7 +268,7 @@ class DiffGrid(Gtk.Grid):
         if self._in_drag and self._drag_handle:
             pos = round(event.x - self._drag_pos)
             self._drag_handle.set_position(pos)
-            self.queue_resize_no_redraw()
+            self.queue_allocate()
             return True
         return False
 
@@ -158,58 +331,20 @@ class DiffGrid(Gtk.Grid):
             for col in range(self.column_count):
                 child = self.get_child_at(col, row)
                 if child and child.get_visible():
-                    msize, nsize = child.get_preferred_size()
-                    # Query properties from children
-                    spanning = GObject.Value(int)
-                    # Use child_get_property on Gtk.Grid is not standard, we can read layout properties
-                    # or just assume spanning=1 if it doesn't span
+                    min_w, nat_w, _, _ = child.measure(Gtk.Orientation.HORIZONTAL, -1)
+                    min_h, nat_h, _, _ = child.measure(Gtk.Orientation.VERTICAL, -1)
                     spanning = 1
                     try:
-                        self.child_get_property(child, 'width', spanning)
-                        spanning = spanning.get_int()
-                    except:
+                        lc = self.get_layout_manager().get_layout_child(
+                            child)
+                        if lc:
+                            spanning = lc.get_column_span()
+                    except Exception:
                         pass
                     if spanning == 1:
-                        wcols[col] = max(wcols[col], msize.width)
-                    hrows[row] = max(hrows[row], msize.height, nsize.height)
+                        wcols[col] = max(wcols[col], min_w)
+                    hrows[row] = max(hrows[row], min_h, nat_h)
         return wcols, hrows
-
-    def do_size_allocate(self, width, height, baseline):
-        wcols, hrows = self._get_min_sizes()
-        (wpane1, wgutter1, wlink1, wgutter2, wpane2, wgutter3, wlink2,
-            wgutter4, wpane3, wmap) = wcols
-        xmin = 0
-        xmax = width - wmap
-        pane_sep_width_1 = wgutter1 + wlink1 + wgutter2
-        pane_sep_width_2 = wgutter3 + wlink2 + wgutter4
-        pos1, pos2 = self._calculate_positions(
-            xmin, xmax, pane_sep_width_1, pane_sep_width_2,
-            wpane1, wpane2, wpane3
-        )
-
-        wpane1 = pos1 - xmin
-        wpane2 = pos2 - (pos1 + pane_sep_width_1)
-        wpane3 = xmax - (pos2 + pane_sep_width_2)
-
-        col_widths = [wpane1, wgutter1, wlink1, wgutter2, wpane2, wgutter3, wlink2, wgutter4, wpane3, wmap]
-
-        for col in range(len(col_widths)):
-            w = col_widths[col]
-            for row in range(4):
-                child = self.get_child_at(col, row)
-                if child and child.get_visible():
-                    h = -1 if row == 1 else hrows[row]
-                    if row == 1:
-                        child.set_vexpand(True)
-                    child.set_size_request(w, h)
-
-        Gtk.Grid.do_size_allocate(self, width, height, baseline)
-
-        ydrag = hrows[0]
-        hdrag = (height - hrows[3]) - hrows[0]
-
-        self._handle1.move_resize(pos1, ydrag, pane_sep_width_1, hdrag)
-        self._handle2.move_resize(pos2, ydrag, pane_sep_width_2, hdrag)
 
     def do_draw(self, context):
         self._handle1.draw(context)

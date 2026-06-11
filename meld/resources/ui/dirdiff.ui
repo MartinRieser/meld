@@ -7,6 +7,8 @@
   <object class="GtkAdjustment" id="pane_adjustment2"/>
   <template class="DirDiff" parent="GtkBox">
     <property name="orientation">vertical</property>
+    <property name="hexpand">True</property>
+    <property name="vexpand">True</property>
     <child>
       <object class="GtkGrid" id="grid">
         <property name="vexpand">1</property>
@@ -135,9 +137,7 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
 
-            <property name="vexpand">True</property>
-            <signal name="scroll-event" handler="on_linkmap_scroll_event" swapped="no"/>
-            <layout>
+            <property name="vexpand">True</property><layout>
               <property name="column">3</property>
               <property name="row">1</property>
             </layout>
@@ -160,9 +160,7 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
 
-            <property name="vexpand">True</property>
-            <signal name="scroll-event" handler="on_linkmap_scroll_event" swapped="no"/>
-            <layout>
+            <property name="vexpand">True</property><layout>
               <property name="column">1</property>
               <property name="row">1</property>
             </layout>
@@ -193,13 +191,7 @@
                 <property name="child">
                   <object class="GtkTreeView" id="treeview0">
                     <property name="focusable">1</property>
-                    <property name="headers_visible">0</property>
-                    <signal name="button-press-event" handler="on_treeview_button_press_event" swapped="no"/>
-                    <signal name="cursor-changed" handler="on_treeview_cursor_changed" swapped="no"/>
-                    <signal name="focus-in-event" handler="on_treeview_focus_in_event" swapped="no"/>
-                    <signal name="key-press-event" handler="on_treeview_key_press_event" swapped="no"/>
-                    <signal name="popup-menu" handler="on_treeview_popup_menu" swapped="no"/>
-                    <signal name="row-activated" handler="on_treeview_row_activated" swapped="no"/>
+                    <property name="headers_visible">0</property><signal name="cursor-changed" handler="on_treeview_cursor_changed" swapped="no"/><signal name="row-activated" handler="on_treeview_row_activated" swapped="no"/>
                     <signal name="row-collapsed" handler="on_treeview_row_collapsed" swapped="no"/>
                     <signal name="row-expanded" handler="on_treeview_row_expanded" swapped="no"/>
                     <child internal-child="selection">
@@ -236,13 +228,7 @@
                 <property name="child">
                   <object class="GtkTreeView" id="treeview1">
                     <property name="focusable">1</property>
-                    <property name="headers_visible">0</property>
-                    <signal name="button-press-event" handler="on_treeview_button_press_event" swapped="no"/>
-                    <signal name="cursor-changed" handler="on_treeview_cursor_changed" swapped="no"/>
-                    <signal name="focus-in-event" handler="on_treeview_focus_in_event" swapped="no"/>
-                    <signal name="key-press-event" handler="on_treeview_key_press_event" swapped="no"/>
-                    <signal name="popup-menu" handler="on_treeview_popup_menu" swapped="no"/>
-                    <signal name="row-activated" handler="on_treeview_row_activated" swapped="no"/>
+                    <property name="headers_visible">0</property><signal name="cursor-changed" handler="on_treeview_cursor_changed" swapped="no"/><signal name="row-activated" handler="on_treeview_row_activated" swapped="no"/>
                     <signal name="row-collapsed" handler="on_treeview_row_collapsed" swapped="no"/>
                     <signal name="row-expanded" handler="on_treeview_row_expanded" swapped="no"/>
                     <child internal-child="selection">
@@ -280,13 +266,7 @@
                 <property name="child">
                   <object class="GtkTreeView" id="treeview2">
                     <property name="focusable">1</property>
-                    <property name="headers_visible">0</property>
-                    <signal name="button-press-event" handler="on_treeview_button_press_event" swapped="no"/>
-                    <signal name="cursor-changed" handler="on_treeview_cursor_changed" swapped="no"/>
-                    <signal name="focus-in-event" handler="on_treeview_focus_in_event" swapped="no"/>
-                    <signal name="key-press-event" handler="on_treeview_key_press_event" swapped="no"/>
-                    <signal name="popup-menu" handler="on_treeview_popup_menu" swapped="no"/>
-                    <signal name="row-activated" handler="on_treeview_row_activated" swapped="no"/>
+                    <property name="headers_visible">0</property><signal name="cursor-changed" handler="on_treeview_cursor_changed" swapped="no"/><signal name="row-activated" handler="on_treeview_row_activated" swapped="no"/>
                     <signal name="row-collapsed" handler="on_treeview_row_collapsed" swapped="no"/>
                     <signal name="row-expanded" handler="on_treeview_row_expanded" swapped="no"/>
                     <child internal-child="selection">

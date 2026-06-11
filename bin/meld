@@ -453,7 +453,12 @@ def ci_screenshot():
 
     def take_screenshot():
         app = Gio.Application.get_default()
-        window = app.get_windows()[0]
+        if not app:
+            return True
+        windows = app.get_windows()
+        if not windows:
+            return True
+        window = windows[0]
         width = window.get_width()
         height = window.get_height()
         if width <= 0 or height <= 0:
@@ -471,9 +476,9 @@ def ci_screenshot():
         texture = renderer.render_texture(node, None) if renderer and node else None
         if texture:
             texture.save_to_png(screenshot_filename)
-            print(f"Screenshot saved to {screenshot_filename}. Exiting.", file=sys.stderr)
-            sys.exit(0)
-        sys.exit(1)
+            print(f"Screenshot saved to {screenshot_filename}. Exiting.", file=sys.stderr, flush=True)
+            os._exit(0)
+        os._exit(1)
 
     timeout_ms = int(os.environ.get("MELD_SCREENSHOT_TIMEOUT_MS", "3000"))
     GLib.timeout_add(timeout_ms, take_screenshot)

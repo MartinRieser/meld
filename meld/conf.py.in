@@ -36,8 +36,12 @@ def no_translation(gettext_string: str) -> str:
     return gettext_string
 
 
+def no_translation_plural(singular: str, plural: str, n: int) -> str:
+    return singular if n == 1 else plural
+
+
 _ = no_translation
-ngettext = no_translation
+ngettext = no_translation_plural
 
 
 def frozen():

@@ -332,7 +332,8 @@ class MeldWindow(Gtk.ApplicationWindow):
         # cycling through X pages when X diffs are initiated.
         if isinstance(self.current_doc(), DirDiff) or \
            isinstance(self.current_doc(), VcView) or \
-           isinstance(page, NewDiffTab):
+           isinstance(page, NewDiffTab) or \
+           self.notebook.get_n_pages() == 1:
             self.notebook.set_current_page(self.notebook.page_num(page))
 
         if hasattr(page, 'scheduler'):

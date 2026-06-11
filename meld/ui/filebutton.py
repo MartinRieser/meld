@@ -67,22 +67,28 @@ class MeldFileButton(Gtk.Button):
         self.set_image(image)
 
     def do_clicked(self) -> None:
-        dialog = Gtk.FileChooserNative(
-            title=self.dialog_label,
-            transient_for=self.get_toplevel(),
-            action=self.action,
-            local_only=self.local_only
-        )
+        dialog = Gtk.FileDialog.new()
+        dialog.set_title(self.dialog_label or "Select Folder")
 
-        if self.file and self.file.get_path():
-            dialog.set_file(self.file)
+        is_folder = (self.action == Gtk.FileChooserAction.SELECT_FOLDER)
 
-        response = dialog.run()
-        gfile = dialog.get_file()
-        dialog.destroy()
+        if self.file:
+            dialog.set_initial_file(self.file)
 
-        if response != Gtk.ResponseType.ACCEPT or not gfile:
-            return
+        def on_dialog_done(obj, result):
+            try:
+                if is_folder:
+                    gfile = obj.select_folder_finish(result)
+                else:
+                    gfile = obj.open_finish(result)
+                if gfile:
+                    self.file = gfile
+                    self.emit('file-selected', self.pane, self.file)
+            except Exception as e:
+                log.error("File dialog failed: %s", e)
 
-        self.file = gfile
-        self.file_selected_signal.emit(self.pane, self.file)
+        parent_win = self.get_native()
+        if is_folder:
+            dialog.select_folder(parent_win, None, on_dialog_done)
+        else:
+            dialog.open(parent_win, None, on_dialog_done)

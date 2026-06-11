@@ -91,7 +91,6 @@
       <object class="GtkMenuButton" id="copy_action_button">
         <property name="focus_on_click">0</property>
         <property name="tooltip-text" translatable="1">Copy chunks</property>
-        <property name="use_popover">True</property>
         <style>
           <class name="image-button"/>
         </style>

@@ -51,9 +51,11 @@ from meld.ui.cellrenderers import (
 )
 from meld.ui.emblemcellrenderer import EmblemCellRenderer
 from meld.ui.util import map_widgets_into_lists
-
-if typing.TYPE_CHECKING:
-    from meld.ui.pathlabel import PathLabel
+from meld.ui.filebutton import MeldFileButton
+from meld.ui.pathlabel import PathLabel
+from meld.linkmap import ScrollLinkMap
+from meld.ui.msgarea import MsgAreaController
+from meld.chunkmap import TreeViewChunkMap
 
 log = logging.getLogger(__name__)
 

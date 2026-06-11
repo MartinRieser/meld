@@ -70,7 +70,8 @@ class SavedWindowState(GObject.GObject):
             self.props.is_maximized = is_maximized
 
         # TODO: Migrate to use is_fullscreen in GTK 4
-        state = window.props.window.get_state()
+        win = window.get_window()
+        state = win.get_state() if win else 0
         is_fullscreen = state & Gdk.WindowState.FULLSCREEN
         if is_fullscreen != self.props.is_fullscreen:
             self.props.is_fullscreen = is_fullscreen

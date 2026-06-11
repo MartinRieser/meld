@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
-  <template class="NotebookLabel" parent="GtkEventBox">
-
-    <signal name="button-press-event" handler="on_label_button_press_event" swapped="no"/>
-    <child>
+  <template class="NotebookLabel" parent="GtkEventBox"><child>
       <object class="GtkCenterBox" id="box">
         <property name="start-widget">
           <object class="GtkBox">

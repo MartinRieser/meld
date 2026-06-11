@@ -35,6 +35,10 @@ from meld.misc import error_dialog, read_pipe_iter
 from meld.recent import RecentType
 from meld.settings import bind_settings, settings
 from meld.ui.vcdialogs import CommitDialog, PushDialog
+from meld.ui.filebutton import MeldFileButton
+from meld.ui.pathlabel import PathLabel
+from meld.ui.msgarea import MsgAreaController
+from meld.ui.emblemcellrenderer import EmblemCellRenderer
 from meld.vc import _null, get_vcs
 from meld.vc._vc import Entry
 

@@ -11,10 +11,11 @@ import gi
 # Require GTK 4, GDK 4, Graphene 1.0, and GtkSourceView 5
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gdk', '4.0')
+gi.require_version('GdkPixbuf', '2.0')
 gi.require_version('Graphene', '1.0')
 gi.require_version('GtkSource', '5')
 
-from gi.repository import GObject, Gtk, Gdk, Graphene, GtkSource
+from gi.repository import GObject, Gtk, Gdk, GdkPixbuf, Graphene, GtkSource
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +27,39 @@ Gtk.IconSize.DIALOG = Gtk.IconSize.LARGE
 Gtk.IconSize.DND = Gtk.IconSize.NORMAL
 Gtk.IconSize.LARGE_TOOLBAR = Gtk.IconSize.LARGE
 
+original_new_from_icon_name = Gtk.Image.new_from_icon_name
+Gtk.Image.new_from_icon_name = lambda icon_name, *args, **kwargs: original_new_from_icon_name(icon_name)
+
+original_set_from_icon_name = Gtk.Image.set_from_icon_name
+Gtk.Image.set_from_icon_name = lambda self, icon_name, *args, **kwargs: original_set_from_icon_name(self, icon_name)
+
+
 Gtk.IconTheme.get_default = lambda: Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+
+def compat_load_icon(self, icon_name, size, flags):
+    try:
+        paintable = self.lookup_icon(icon_name, [], size, 1, Gtk.TextDirection.LTR, 0)
+        if paintable:
+            gfile = paintable.get_file()
+            if gfile:
+                path = gfile.get_path()
+                if path:
+                    return GdkPixbuf.Pixbuf.new_from_file_at_size(path, size, size)
+    except Exception as e:
+        log.warning(f"Failed to load icon '{icon_name}' from path: {e}")
+    try:
+        paintable = self.lookup_icon('image-missing', [], size, 1, Gtk.TextDirection.LTR, 0)
+        if paintable:
+            gfile = paintable.get_file()
+            if gfile:
+                path = gfile.get_path()
+                if path:
+                    return GdkPixbuf.Pixbuf.new_from_file_at_size(path, size, size)
+    except Exception:
+        pass
+    return GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, True, 8, size, size)
+
+Gtk.IconTheme.load_icon = compat_load_icon
 
 original_get_iter_at_line = Gtk.TextBuffer.get_iter_at_line
 def compat_get_iter_at_line(self, line):
@@ -46,6 +79,9 @@ def compat_accelerator_parse(accelerator):
     return (res[1], res[2]) if len(res) == 3 else res
 Gtk.accelerator_parse = compat_accelerator_parse
 
+Gtk.binding_set_find = lambda name: None
+Gtk.binding_entry_remove = lambda binding_set, key, modifiers: None
+
 # Mock WindowState
 class MockWindowState:
     WITHDRAWN = 1 << 0
@@ -60,6 +96,22 @@ class MockWindowState:
 
 Gdk.WindowState = MockWindowState
 Gdk.ModifierType.MOD1_MASK = Gdk.ModifierType.ALT_MASK
+
+class MockEventMask:
+    POINTER_MOTION_MASK = 1 << 2
+    BUTTON_PRESS_MASK = 1 << 8
+    BUTTON_RELEASE_MASK = 1 << 9
+    EXPOSURE_MASK = 1 << 1
+    BUTTON_MOTION_MASK = 1 << 4
+    ENTER_NOTIFY_MASK = 1 << 10
+    LEAVE_NOTIFY_MASK = 1 << 11
+    KEY_PRESS_MASK = 1 << 14
+    KEY_RELEASE_MASK = 1 << 15
+    SCROLL_MASK = 1 << 21
+    SMOOTH_SCROLL_MASK = 1 << 22
+    TOUCH_MASK = 1 << 23
+
+Gdk.EventMask = MockEventMask
 
 # Surface wrapper to support get_state
 class SurfaceWrapper:
@@ -117,6 +169,11 @@ Gtk.Widget.get_border_width = lambda self: self.get_margin_start()
 
 # show_all is no-op
 Gtk.Widget.show_all = lambda self: None
+Gtk.Widget.ensure_style = lambda self: None
+Gtk.Widget.set_events = lambda self, events: None
+Gtk.Widget.get_events = lambda self: 0
+Gtk.Button.set_image = lambda self, image: self.set_child(image)
+Gtk.Button.get_image = lambda self: self.get_child()
 
 # Widget foreach emulation
 def widget_foreach(self, callback, *user_data):
@@ -138,6 +195,7 @@ def notebook_child_get_property(self, child, property_name):
 
 Gtk.Notebook.child_set_property = notebook_child_set_property
 Gtk.Notebook.child_get_property = notebook_child_get_property
+Gtk.Notebook.get_children = lambda self: [self.get_nth_page(i) for i in range(self.get_n_pages())]
 
 # Grid child property mapping
 def grid_child_get_property(self, child, property_name, value):
@@ -197,11 +255,8 @@ Gtk.Widget.override_font = widget_override_font
 def widget_remove(self, child):
     if hasattr(self, 'set_child') and self.get_child() == child:
         self.set_child(None)
-    elif hasattr(self, 'remove'):
-        try:
-            self.remove(child)
-        except Exception:
-            pass
+    elif child.get_parent() == self:
+        child.unparent()
 Gtk.Widget.remove = widget_remove
 
 # Widget.add mapping
@@ -301,6 +356,12 @@ class MockEvent:
     def triggers_context_menu(self):
         return self.button == 3
 
+def safe_emit(widget, signal, *args):
+    try:
+        return widget.emit(signal, *args)
+    except TypeError:
+        return False
+
 # Attach event controllers
 def attach_compat_controllers(widget):
     if getattr(widget, '_compat_controllers_attached', False):
@@ -311,10 +372,10 @@ def attach_compat_controllers(widget):
     key_ctrl = Gtk.EventControllerKey.new()
     def on_key_pressed(ctrl, keyval, keycode, state):
         ev = MockEvent(keyval=keyval, state=state, hardware_keycode=keycode, type=Gdk.EventType.KEY_PRESS, window=widget.get_window())
-        return bool(widget.emit('key-press-event', ev))
+        return bool(safe_emit(widget, 'key-press-event', ev))
     def on_key_released(ctrl, keyval, keycode, state):
         ev = MockEvent(keyval=keyval, state=state, hardware_keycode=keycode, type=Gdk.EventType.KEY_RELEASE, window=widget.get_window())
-        return bool(widget.emit('key-release-event', ev))
+        return bool(safe_emit(widget, 'key-release-event', ev))
     key_ctrl.connect('key-pressed', on_key_pressed)
     key_ctrl.connect('key-released', on_key_released)
     widget.add_controller(key_ctrl)
@@ -331,7 +392,7 @@ def attach_compat_controllers(widget):
         except:
             pass
         ev = MockEvent(button=button, x=x, y=y, state=state, type=Gdk.EventType.BUTTON_PRESS, window=widget.get_window())
-        res = widget.emit('button-press-event', ev)
+        res = safe_emit(widget, 'button-press-event', ev)
         if res:
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
     def on_released(gesture, n_press, x, y):
@@ -344,7 +405,7 @@ def attach_compat_controllers(widget):
         except:
             pass
         ev = MockEvent(button=button, x=x, y=y, state=state, type=Gdk.EventType.BUTTON_RELEASE, window=widget.get_window())
-        res = widget.emit('button-release-event', ev)
+        res = safe_emit(widget, 'button-release-event', ev)
         if res:
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
     click_gesture.connect('pressed', on_pressed)
@@ -363,10 +424,10 @@ def attach_compat_controllers(widget):
         except:
             pass
         ev = MockEvent(x=x, y=y, state=state, type=Gdk.EventType.MOTION_NOTIFY, window=widget.get_window())
-        widget.emit('motion-notify-event', ev)
+        safe_emit(widget, 'motion-notify-event', ev)
     motion_ctrl.connect('motion', on_motion)
     widget.add_controller(motion_ctrl)
-
+ 
     # Scroll
     scroll_ctrl = Gtk.EventControllerScroll.new(Gtk.EventControllerScrollFlags.BOTH_AXES)
     def on_scroll(ctrl, dx, dy):
@@ -380,17 +441,29 @@ def attach_compat_controllers(widget):
         elif dx > 0:
             direction = Gdk.ScrollDirection.RIGHT
         ev = MockEvent(direction=direction, delta_x=dx, delta_y=dy, type=Gdk.EventType.SCROLL, window=widget.get_window())
-        return bool(widget.emit('scroll-event', ev))
+        return bool(safe_emit(widget, 'scroll-event', ev))
     scroll_ctrl.connect('scroll', on_scroll)
     widget.add_controller(scroll_ctrl)
-
+ 
+    # Focus
+    focus_ctrl = Gtk.EventControllerFocus.new()
+    def on_focus_enter(ctrl):
+        ev = MockEvent(type=0, window=widget.get_window())
+        safe_emit(widget, 'focus-in-event', ev)
+    def on_focus_leave(ctrl):
+        ev = MockEvent(type=0, window=widget.get_window())
+        safe_emit(widget, 'focus-out-event', ev)
+    focus_ctrl.connect('enter', on_focus_enter)
+    focus_ctrl.connect('leave', on_focus_leave)
+    widget.add_controller(focus_ctrl)
+ 
     # Window close request and size-allocate
     if isinstance(widget, Gtk.Window):
         def on_close_request(window):
             ev = MockEvent(type=Gdk.EventType.DELETE, window=window.get_window())
-            return bool(window.emit('delete-event', ev))
+            return bool(safe_emit(window, 'delete-event', ev))
         widget.connect('close-request', on_close_request)
-
+ 
         def on_size_notify(window, pspec):
             class MockAllocation:
                 def __init__(self, w, h):
@@ -399,7 +472,7 @@ def attach_compat_controllers(widget):
                     self.width = w
                     self.height = h
             alloc = MockAllocation(window.get_width(), window.get_height())
-            window.emit('size-allocate', alloc)
+            safe_emit(window, 'size-allocate', alloc)
         widget.connect('notify::default-width', on_size_notify)
         widget.connect('notify::default-height', on_size_notify)
 
@@ -454,7 +527,8 @@ def compat_widget_connect(self, signal, callback, *args, **kwargs):
         'button-press-event', 'button-release-event',
         'key-press-event', 'key-release-event',
         'motion-notify-event', 'scroll-event',
-        'drag-data-received', 'draw'
+        'drag-data-received', 'draw',
+        'focus-in-event', 'focus-out-event'
     }
     if signal in compat_signals:
         attach_compat_controllers(self)
@@ -462,6 +536,52 @@ def compat_widget_connect(self, signal, callback, *args, **kwargs):
 Gtk.Widget.connect = compat_widget_connect
 
 # GObjectMeta class creation interceptor
+def get_compat_margin(self):
+    return self.get_margin_start()
+
+def set_compat_margin(self, value):
+    self.set_margin_start(value)
+    self.set_margin_end(value)
+    self.set_margin_top(value)
+    self.set_margin_bottom(value)
+
+compat_margin_prop = GObject.Property(type=int, getter=get_compat_margin, setter=set_compat_margin)
+
+def get_compat_spacing(self):
+    return getattr(self, '_compat_spacing', 0)
+
+def set_compat_spacing(self, value):
+    self._compat_spacing = value
+
+compat_spacing_prop = GObject.Property(type=int, getter=get_compat_spacing, setter=set_compat_spacing, default=0)
+
+class CallableBool(int):
+    def __new__(cls, val):
+        return super().__new__(cls, 1 if val else 0)
+    def __call__(self):
+        return bool(self)
+    def __repr__(self):
+        return 'True' if self else 'False'
+    def __str__(self):
+        return 'True' if self else 'False'
+
+def get_compat_is_focus(self):
+    return CallableBool(self.has_focus())
+
+def set_compat_is_focus(self, value):
+    if value:
+        self.grab_focus()
+
+compat_is_focus_prop = GObject.Property(type=bool, getter=get_compat_is_focus, setter=set_compat_is_focus, default=False)
+
+def get_compat_shadow_type(self):
+    return getattr(self, '_compat_shadow_type', 'none')
+
+def set_compat_shadow_type(self, value):
+    self._compat_shadow_type = value
+
+compat_shadow_type_prop = GObject.Property(type=str, getter=get_compat_shadow_type, setter=set_compat_shadow_type, default='none')
+
 import gi.types
 original_new = gi.types.GObjectMeta.__new__
 def custom_new(cls, name, bases, dct):
@@ -475,6 +595,18 @@ def custom_new(cls, name, bases, dct):
             break
             
     if is_widget:
+        if 'margin' not in dct:
+            dct['margin'] = compat_margin_prop
+        if 'spacing' not in dct:
+            dct['spacing'] = compat_spacing_prop
+        if 'is_focus' not in dct:
+            dct['is_focus'] = compat_is_focus_prop
+        if 'is-focus' not in dct:
+            dct['is-focus'] = compat_is_focus_prop
+        if 'shadow_type' not in dct:
+            dct['shadow_type'] = compat_shadow_type_prop
+        if 'shadow-type' not in dct:
+            dct['shadow-type'] = compat_shadow_type_prop
         signals_to_register = {
             'draw': (GObject.SignalFlags.RUN_LAST, GObject.TYPE_BOOLEAN, (object,)),
             'button-press-event': (GObject.SignalFlags.RUN_LAST, GObject.TYPE_BOOLEAN, (object,)),
@@ -487,6 +619,9 @@ def custom_new(cls, name, bases, dct):
             'delete-event': (GObject.SignalFlags.RUN_LAST, GObject.TYPE_BOOLEAN, (object,)),
             'drag-data-received': (GObject.SignalFlags.RUN_LAST, GObject.TYPE_NONE, (object, int, int, object, int, int)),
             'size-allocate': (GObject.SignalFlags.RUN_LAST, GObject.TYPE_NONE, (object,)),
+            'focus-in-event': (GObject.SignalFlags.RUN_LAST, GObject.TYPE_BOOLEAN, (object,)),
+            'focus-out-event': (GObject.SignalFlags.RUN_LAST, GObject.TYPE_BOOLEAN, (object,)),
+            'style-updated': (GObject.SignalFlags.RUN_LAST, GObject.TYPE_NONE, ()),
         }
         
         for sig_name, sig_def in signals_to_register.items():
@@ -502,6 +637,10 @@ def custom_new(cls, name, bases, dct):
             
     if 'do_draw' in dct:
         def compat_do_snapshot(self, snapshot):
+            for base in bases:
+                if hasattr(base, 'do_snapshot'):
+                    base.do_snapshot(self, snapshot)
+                    break
             w = self.get_width()
             h = self.get_height()
             rect = Graphene.Rect.alloc()
@@ -512,6 +651,10 @@ def custom_new(cls, name, bases, dct):
         
     if 'do_draw_layer' in dct:
         def compat_do_snapshot_layer(self, layer, snapshot):
+            for base in bases:
+                if hasattr(base, 'do_snapshot_layer'):
+                    base.do_snapshot_layer(self, layer, snapshot)
+                    break
             w = self.get_width()
             h = self.get_height()
             rect = Graphene.Rect.alloc()
@@ -547,7 +690,7 @@ Gtk.MenuItem = CompatMenuItem
 class PopoverMenuWrapper:
     def __init__(self, popover):
         self.popover = popover
-    def attach_to_widget(self, widget, callback):
+    def attach_to_widget(self, widget, callback=None, *args, **kwargs):
         self.popover.set_parent(widget)
     def show_all(self):
         pass
@@ -567,12 +710,21 @@ class PopoverMenuWrapper:
         self.popover.set_pointing_to(rect)
         self.popover.popup()
 
-def popover_new_from_model(relative_to, model):
-    popover = Gtk.PopoverMenu.new_from_model(model)
-    if relative_to:
-        popover.set_parent(relative_to)
-    return popover
-Gtk.Popover.new_from_model = staticmethod(popover_new_from_model)
+class CompatPopover(Gtk.PopoverMenu):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def bind_model(self, model, action_namespace=None):
+        self.set_menu_model(model)
+
+    @staticmethod
+    def new_from_model(relative_to, model):
+        popover = Gtk.PopoverMenu.new_from_model(model)
+        if relative_to:
+            popover.set_parent(relative_to)
+        return popover
+
+Gtk.Popover = CompatPopover
 
 original_menubutton_set_popover = Gtk.MenuButton.set_popover
 def compat_menubutton_set_popover(self, popover):
@@ -892,4 +1044,85 @@ class CompatHButtonBox(Gtk.Box):
 
 Gtk.ButtonBox = CompatButtonBox
 Gtk.HButtonBox = CompatHButtonBox
+
+def statusbar_get_message_area(self):
+    if not hasattr(self, '_compat_box'):
+        self._compat_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self._compat_box.set_parent(self)
+        lbl = Gtk.Label()
+        self._compat_box.append(lbl)
+    return self._compat_box
+
+Gtk.Statusbar.get_message_area = statusbar_get_message_area
+Gtk.Statusbar.pack_end = lambda self, child, *args, **kwargs: self.get_message_area().pack_end(child, *args, **kwargs)
+Gtk.Statusbar.pack_start = lambda self, child, *args, **kwargs: self.get_message_area().pack_start(child, *args, **kwargs)
+
+GtkSource.GutterRenderer.set_size = lambda self, size: self.set_size_request(size, -1)
+
+import gi._gtktemplate
+original_init_template = gi._gtktemplate.init_template
+def compat_init_template(self, cls, base_init_template):
+    self.init_template = lambda: None
+    if self.__class__ is not cls:
+        raise TypeError(
+            "Inheritance from classes with @Gtk.Template decorators "
+            "is not allowed at this time"
+        )
+    self.__gtktemplate_handlers__ = set()
+    base_init_template(self)
+    for widget_name, attr_name in self.__gtktemplate_widgets__.items():
+        self.__dict__[attr_name] = self.get_template_child(cls, widget_name)
+    # Just ignore missing handlers instead of raising RuntimeError
+    for handler_name, attr_name in self.__gtktemplate_methods__.items():
+        if handler_name not in self.__gtktemplate_handlers__:
+            log.debug(f"Ignoring missing template handler {handler_name}")
+gi._gtktemplate.init_template = compat_init_template
+
+original_gesture_multipress = Gtk.GestureClick
+def compat_gesture_multipress(*args, **kwargs):
+    widget = kwargs.pop('widget', None)
+    gesture = original_gesture_multipress.new(*args, **kwargs)
+    if widget:
+        widget.add_controller(gesture)
+    return gesture
+compat_gesture_multipress.new = original_gesture_multipress.new
+Gtk.GestureMultiPress = compat_gesture_multipress
+
+original_event_controller_motion = Gtk.EventControllerMotion
+def compat_event_controller_motion(*args, **kwargs):
+    widget = kwargs.pop('widget', None)
+    controller = original_event_controller_motion.new(*args, **kwargs)
+    if widget:
+        widget.add_controller(controller)
+    return controller
+compat_event_controller_motion.new = original_event_controller_motion.new
+Gtk.EventControllerMotion = compat_event_controller_motion
+
+
+# Gdk.cairo_get_clip_rectangle emulation
+class GdkRectangle:
+    def __init__(self, x, y, w, h):
+        self.x = x
+        self.y = y
+        self.width = w
+        self.height = h
+
+def cairo_get_clip_rectangle(context):
+    x1, y1, x2, y2 = context.clip_extents()
+    return True, GdkRectangle(x1, y1, x2 - x1, y2 - y1)
+
+Gdk.cairo_get_clip_rectangle = cairo_get_clip_rectangle
+
+# do_draw_layer class call fallback mapping
+Gtk.TextView.do_draw_layer = lambda *args: None
+if hasattr(GtkSource, 'View'):
+    GtkSource.View.do_draw_layer = lambda *args: None
+if hasattr(GtkSource, 'Map'):
+    GtkSource.Map.do_draw_layer = lambda *args: None
+
+Gtk.Window.get_size = lambda self: (self.get_width(), self.get_height())
+
+
+
+
 
