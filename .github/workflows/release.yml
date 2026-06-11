@@ -97,7 +97,7 @@ jobs:
             mingw-w64-ucrt-x86_64-python-packaging
 
       - name: Install Python dependencies
-        run: pip install pyinstaller-versionfile
+        run: pip install --no-build-isolation pyinstaller-versionfile
 
       - name: Build and package with PyInstaller and NSIS
         run: |
@@ -152,7 +152,8 @@ jobs:
 
       - name: Build and install Meld
         run: |
-          PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig
+          BREW_PREFIX=$(brew --prefix)
+          export PKG_CONFIG_PATH="$BREW_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH"
           cat > /tmp/pygobject-3.0.pc << 'EOF'
           prefix=/usr
           exec_prefix=${prefix}
@@ -164,7 +165,7 @@ jobs:
           Libs:
           Cflags:
           EOF
-          sudo cp /tmp/pygobject-3.0.pc "$PKG_CONFIG_PATH/"
+          sudo cp /tmp/pygobject-3.0.pc "$BREW_PREFIX/lib/pkgconfig/"
           meson setup --prefix=/ build
           meson compile -v -C build
           meson install -C build --destdir=install
