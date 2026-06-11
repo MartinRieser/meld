@@ -102,13 +102,15 @@ jobs:
 
       - name: Build and package with PyInstaller and NSIS
         run: |
-          INSTALL_DIR=$PWD/build/install
-          meson setup --prefix=$INSTALL_DIR build
+          meson setup --prefix=/ build .
           meson compile -v -C build
-          meson install -C build
-          cp "$GITHUB_WORKSPACE/windows/meld.spec" "$INSTALL_DIR/"
-          cp "$GITHUB_WORKSPACE/windows/meld.nsis" "$INSTALL_DIR/"
-          cd "$INSTALL_DIR"
+          meson install -C build --destdir=install
+          INST_ROOT=$(find $PWD/build/install -name "meld" -path "*/bin/meld" -exec dirname {} \;)
+          INST_ROOT=$(dirname "$INST_ROOT")
+          echo "Install root: $INST_ROOT"
+          cp "$GITHUB_WORKSPACE/windows/meld.spec" "$INST_ROOT/"
+          cp "$GITHUB_WORKSPACE/windows/meld.nsis" "$INST_ROOT/"
+          cd "$INST_ROOT"
           python -m PyInstaller meld.spec
           cp version.nsh dist/
           cp "$GITHUB_WORKSPACE/windows/meld.nsis" dist/
@@ -173,6 +175,9 @@ jobs:
           meson setup --prefix=/ build
           meson compile -v -C build
           meson install -C build --destdir=install
+          INST_ROOT=$(find $PWD/build/install -name "meld" -path "*/bin/meld" -exec dirname {} \;)
+          INST_ROOT=$(dirname "$INST_ROOT")
+          echo "INST_ROOT=$INST_ROOT" >> $GITHUB_ENV
 
       - name: Generate .icns icon
         run: |
@@ -186,12 +191,12 @@ jobs:
               -o meld.iconset/icon_${size}x${size}@2x.png
           done
           iconutil -c icns meld.iconset -o meld.icns
-          cp meld.icns install/
+          cp meld.icns $INST_ROOT/
 
       - name: Package with PyInstaller
         run: |
-          cp macos/meld.spec install/
-          cd install
+          cp macos/meld.spec "$INST_ROOT/"
+          cd "$INST_ROOT"
           export DYLD_FALLBACK_LIBRARY_PATH=$(brew --prefix)/lib
           pyinstaller ./meld.spec
 
@@ -203,7 +208,7 @@ jobs:
           VERSION="${VERSION_TAG#v}"
           DMG_NAME="Meld-${VERSION}-macOS-${{ matrix.arch }}.dmg"
           mkdir -p dmg-root
-          cp -R install/dist/Meld.app dmg-root/
+          cp -R "$INST_ROOT/dist/Meld.app" dmg-root/
           create-dmg \
             --volname "Meld $VERSION" \
             --window-pos 200 120 \
