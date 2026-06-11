@@ -78,15 +78,16 @@ jobs:
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: |
-          /ucrt64/bin/python -m pip install -r dev-requirements.txt
+          pip install --break-system-packages pytest
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
+        env:
+          GI_TYPELIB_PATH: /ucrt64/lib/girepository-1.0
+          GDK_BACKEND: windows
+          NO_AT_BRIDGE: 1
         run: |
-          export GI_TYPELIB_PATH=/ucrt64/lib/girepository-1.0
-          export GDK_BACKEND=windows
-          export NO_AT_BRIDGE=1
-          /ucrt64/bin/python -m pytest -v
+          python -m pytest -v
       - name: Run tests (Ubuntu)
         if: runner.os == 'Linux'
         run: |
