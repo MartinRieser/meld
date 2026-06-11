@@ -40,31 +40,27 @@ jobs:
             python3-dev \
             gobject-introspection \
             gir1.2-gtk-4.0 \
-            gir1.2-gtksourceview-5 \
+            gir1.2-gtksource-5 \
             meson \
             xvfb
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
           brew update
-          brew install gtk4 gtksourceview5 gobject-introspection pygobject3 cairo meson pkg-config
-      - name: Set up Python (Linux)
-        if: runner.os == 'Linux'
-        uses: actions/setup-python@v5
+          brew install gtk4 gtksourceview5 gobject-introspection cairo meson pkg-config
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Set up Python (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          # Use Homebrew's Python so gi bindings are importable
-          echo "Python=/usr/local/bin/python3" >> $GITHUB_ENV
-          echo "/usr/local/bin" >> $GITHUB_PATH
       - name: Install Python dependencies
         run: |
           pip install -r dev-requirements.txt
+      - name: Build and install PyGObject (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          pip install --no-binary :all: pycairo PyGObject
       - name: Run tests (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run pytest -v
       - name: Run tests (macOS)
         if: runner.os == 'macOS'
-        run: python3 -m pytest -v
+        run: pytest -v
