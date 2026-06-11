@@ -76,17 +76,17 @@ jobs:
           pip install --no-binary :all: pycairo PyGObject
       - name: Install Python dependencies (Windows)
         if: runner.os == 'Windows'
-        shell: ucrt64 {0}
+        shell: msys2 {0}
         run: |
-          pip install -r dev-requirements.txt
+          /ucrt64/bin/python -m pip install -r dev-requirements.txt
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
-        shell: ucrt64 {0}
-        env:
-          GDK_BACKEND: windows
-          NO_AT_BRIDGE: 1
+        shell: msys2 {0}
         run: |
-          pytest -v
+          export GI_TYPELIB_PATH=/ucrt64/lib/girepository-1.0
+          export GDK_BACKEND=windows
+          export NO_AT_BRIDGE=1
+          /ucrt64/bin/python -m pytest -v
       - name: Run tests (Ubuntu)
         if: runner.os == 'Linux'
         run: |
