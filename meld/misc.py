@@ -453,6 +453,8 @@ def calc_syncpoint(adj: Gtk.Adjustment) -> float:
 
     current = adj.get_value()
     half_a_screen = adj.get_page_size() / 2
+    if half_a_screen == 0:
+        return 0.0
 
     syncpoint = 0.0
     # How far through the first half-screen our adjustment is

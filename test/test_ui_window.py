@@ -55,3 +55,29 @@ def test_meld_window_tabs():
     assert window.notebook.get_n_pages() == 1
     page_left = window.notebook.get_nth_page(0)
     assert isinstance(page_left, NewDiffTab)
+
+def test_meld_window_actions():
+    app = MeldApp()
+    app.register(None)
+
+    window = MeldWindow()
+    app.add_window(window)
+
+    # Initially, no pages
+    assert window.notebook.get_n_pages() == 0
+
+    # 1. Trigger "new-tab" action
+    action = window.lookup_action("new-tab")
+    assert action is not None
+    action.activate(None)
+
+    assert window.notebook.get_n_pages() == 1
+    page = window.notebook.get_nth_page(0)
+    assert isinstance(page, NewDiffTab)
+
+    # 2. Trigger "close" action
+    close_action = window.lookup_action("close")
+    assert close_action is not None
+    close_action.activate(None)
+
+    assert window.notebook.get_n_pages() == 0

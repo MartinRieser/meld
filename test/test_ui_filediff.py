@@ -73,3 +73,62 @@ def test_filediff_delete_chunk():
     # Verify that the line was removed
     start, end = buf0.get_bounds()
     assert buf0.get_text(start, end, False) == "line 1\nline 3\n"
+
+def test_filediff_save_file(tmp_path):
+    import time
+    from gi.repository import GLib
+    from meld.meldbuffer import MeldBufferState
+
+    # Create temporary files
+    file_a_path = tmp_path / "file_a.txt"
+    file_b_path = tmp_path / "file_b.txt"
+    file_a_path.write_text("Hello World A\n")
+    file_b_path.write_text("Hello World B\n")
+
+    # Instantiate FileDiff
+    filediff = FileDiff(2)
+
+    # Set files
+    file_a = Gio.File.new_for_path(str(file_a_path))
+    file_b = Gio.File.new_for_path(str(file_b_path))
+    filediff.set_files([file_a, file_b])
+
+    # Wait for the files to load. Since file loading is async, we spin the GLib main context.
+    context = GLib.MainContext.default()
+    start_time = time.time()
+    while (filediff.textbuffer[0].data.state != MeldBufferState.LOAD_FINISHED or
+           filediff.textbuffer[1].data.state != MeldBufferState.LOAD_FINISHED):
+        if time.time() - start_time > 2.0:
+            raise TimeoutError("Loading files took too long")
+        while context.pending():
+            context.iteration(False)
+        time.sleep(0.01)
+
+    # Mock _get_focused_pane to return pane 0
+    filediff._get_focused_pane = lambda: 0
+
+    # Modify pane 0 buffer
+    buf0 = filediff.textbuffer[0]
+    buf0.set_text("Hello Modified World\n")
+    assert buf0.get_modified() is True
+    filediff._set_save_action_sensitivity()
+
+    # Retrieve the 'save' action
+    action = filediff.view_action_group.lookup_action('save')
+    assert action is not None
+
+    # Activate the 'save' action
+    action.activate(None)
+
+    # Spin GLib main loop until the buffer is no longer modified
+    start_time = time.time()
+    while buf0.get_modified():
+        if time.time() - start_time > 2.0:
+            raise TimeoutError("Saving file took too long")
+        while context.pending():
+            context.iteration(False)
+        time.sleep(0.01)
+
+    # Verify that the file content on disk has been updated
+    assert file_a_path.read_text().strip() == "Hello Modified World"
+
