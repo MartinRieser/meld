@@ -31,6 +31,7 @@ jobs:
             gir1.2-gtk-4.0 \
             gir1.2-gtksource-5 \
             gettext \
+            desktop-file-utils \
             meson
 
       - uses: actions/setup-python@v5
