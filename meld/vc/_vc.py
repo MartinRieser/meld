@@ -23,6 +23,7 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import collections
+import io
 import itertools
 import logging
 import os
@@ -425,13 +426,15 @@ def popen(cmd, cwd=None, use_locale_encoding=True):
     text stream with universal newlines.
     If use_locale_encoding is False output is treated as binary stream.
     """
-
-    process = subprocess.Popen(
-        cmd, cwd=cwd, stdout=subprocess.PIPE,
-        universal_newlines=use_locale_encoding,
+    res = subprocess.run(
+        cmd, cwd=cwd, capture_output=True,
+        text=use_locale_encoding,
         startupinfo=get_hide_window_startupinfo(),
     )
-    return process.stdout
+    if use_locale_encoding:
+        return io.StringIO(res.stdout)
+    else:
+        return io.BytesIO(res.stdout)
 
 
 def call_temp_output(cmd, cwd, file_id='', suffix=None):
@@ -450,23 +453,20 @@ def call_temp_output(cmd, cwd, file_id='', suffix=None):
         cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         startupinfo=get_hide_window_startupinfo(),
     )
-    vc_file = process.stdout
-
-    # Error handling here involves doing nothing; in most cases, the only
-    # sane response is to return an empty temp file.
-
     prefix = 'meld-tmp' + ('-' + file_id if file_id else '')
     with tempfile.NamedTemporaryFile(prefix=prefix,
                                      suffix=suffix, delete=False) as f:
-        shutil.copyfileobj(vc_file, f)
+        shutil.copyfileobj(process.stdout, f)
+    process.wait()
+    process.stdout.close()
+    process.stderr.close()
     return f.name
 
 
 # Return the return value of a given command
 def call(cmd, cwd=None):
-    devnull = open(os.devnull, "wb")
     return subprocess.call(
-        cmd, cwd=cwd, stdout=devnull, stderr=devnull,
+        cmd, cwd=cwd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         startupinfo=get_hide_window_startupinfo(),
     )
 

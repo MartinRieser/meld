@@ -394,11 +394,15 @@ if not hasattr(Gdk, "Screen"):
             return cls()
 
     Gdk.Screen = DummyScreen
-Gtk.StyleContext.add_provider_for_screen = (
-    lambda screen, provider, priority: Gtk.StyleContext.add_provider_for_display(
-        Gdk.Display.get_default(), provider, priority
-    )
-)
+
+
+def _add_provider_for_screen(screen, provider, priority):
+    display = Gdk.Display.get_default()
+    if display is not None:
+        Gtk.StyleContext.add_provider_for_display(display, provider, priority)
+
+
+Gtk.StyleContext.add_provider_for_screen = _add_provider_for_screen
 
 Gtk.cairo_should_draw_window = lambda *args: True
 
