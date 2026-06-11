@@ -35,11 +35,15 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Ensure PyGObject pkg-config for meson build
+        run: |
+          pip install meson
+          pip install --no-binary :all: pycairo PyGObject
+
       - name: Build wheel and sdist
         run: |
           pip install build
-          PKG_CONFIG_PATH=/usr/lib/python3/dist-packages:$PKG_CONFIG_PATH \
-            python -m build
+          python -m build
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
