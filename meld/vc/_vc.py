@@ -130,6 +130,17 @@ class Entry:
         return entry.state == STATE_IGNORED or entry.isdir
 
 
+class SafePopen(subprocess.Popen):
+    def __del__(self):
+        try:
+            if self.poll() is None:
+                self.wait()
+        except Exception:
+            pass
+        if hasattr(super(), '__del__'):
+            super().__del__()
+
+
 class Vc:
 
     VC_DIR: ClassVar[str]
@@ -166,7 +177,7 @@ class Vc:
         Note that this runs at the *location*, not at the *root*.
         """
         cmd = (self.CMD,) + args
-        return subprocess.Popen(
+        return SafePopen(
             cmd, cwd=self.location, stdout=subprocess.PIPE,
             universal_newlines=use_locale_encoding,
             startupinfo=get_hide_window_startupinfo(),
