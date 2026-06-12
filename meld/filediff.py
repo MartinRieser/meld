@@ -1998,6 +1998,8 @@ class FileDiff(Gtk.Box, MeldDoc):
         self.set_action_enabled('merge-all', mergeable[0] or mergeable[1])
 
     def on_diffs_changed(self, linediffer, chunk_changes):
+        if self.num_panes == 3:
+            self.statusbar[1].set_conflict_count(len(self.linediffer.conflicts))
 
         for pane in range(self.num_panes):
             pane_changes = list(self.linediffer.single_changes(pane))

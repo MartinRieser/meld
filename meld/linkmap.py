@@ -17,6 +17,7 @@
 
 import math
 
+import cairo
 from gi.repository import Gdk, Gtk
 
 from meld.settings import get_meld_settings
@@ -119,16 +120,34 @@ class LinkMap(Gtk.DrawingArea):
                                  x_steps[0], f1 - 0.5)
                 context.close_path()
 
-            Gdk.cairo_set_source_rgba(context, self.fill_colors[c[0]])
+            # Create a linear gradient from left to right for visual connections
+            grad = cairo.LinearGradient(x_steps[0], 0, x_steps[2], 0)
+            color = self.fill_colors[c[0]]
+            grad.add_color_stop_rgba(0.0, color.red, color.green, color.blue, min(color.alpha * 1.5, 0.7))
+            grad.add_color_stop_rgba(0.15, color.red, color.green, color.blue, color.alpha * 0.5)
+            grad.add_color_stop_rgba(0.5, color.red, color.green, color.blue, color.alpha * 0.2)
+            grad.add_color_stop_rgba(0.85, color.red, color.green, color.blue, color.alpha * 0.5)
+            grad.add_color_stop_rgba(1.0, color.red, color.green, color.blue, min(color.alpha * 1.5, 0.7))
+            context.set_source(grad)
             context.fill_preserve()
 
             chunk_idx = self.filediff.linediffer.locate_chunk(left, c[1])[0]
             if chunk_idx == self.filediff.cursor.chunk:
                 highlight = self.fill_colors['current-chunk-highlight']
-                Gdk.cairo_set_source_rgba(context, highlight)
+                grad_hl = cairo.LinearGradient(x_steps[0], 0, x_steps[2], 0)
+                grad_hl.add_color_stop_rgba(0.0, highlight.red, highlight.green, highlight.blue, min(highlight.alpha * 1.5, 0.8))
+                grad_hl.add_color_stop_rgba(0.5, highlight.red, highlight.green, highlight.blue, highlight.alpha * 0.3)
+                grad_hl.add_color_stop_rgba(1.0, highlight.red, highlight.green, highlight.blue, min(highlight.alpha * 1.5, 0.8))
+                context.set_source(grad_hl)
                 context.fill_preserve()
 
-            Gdk.cairo_set_source_rgba(context, self.line_colors[c[0]])
+            # Render thin border lines that fade out slightly in the center
+            line_color = self.line_colors[c[0]]
+            grad_line = cairo.LinearGradient(x_steps[0], 0, x_steps[2], 0)
+            grad_line.add_color_stop_rgba(0.0, line_color.red, line_color.green, line_color.blue, line_color.alpha)
+            grad_line.add_color_stop_rgba(0.5, line_color.red, line_color.green, line_color.blue, line_color.alpha * 0.4)
+            grad_line.add_color_stop_rgba(1.0, line_color.red, line_color.green, line_color.blue, line_color.alpha)
+            context.set_source(grad_line)
             context.stroke()
 
 

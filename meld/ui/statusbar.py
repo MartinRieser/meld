@@ -136,6 +136,19 @@ class MeldStatusBar(Gtk.Statusbar):
         hbox.remove(label)
         hbox.pack_end(label, False, True, 0)
 
+        # Conflict badge label
+        self.conflict_label = Gtk.Label()
+        self.conflict_label.get_style_context().add_class("conflict-badge")
+        self.conflict_label.props.visible = False
+        hbox.pack_start(self.conflict_label, False, True, 6)
+
+    def set_conflict_count(self, count):
+        if count > 0:
+            self.conflict_label.set_text(_("{} conflicts remaining").format(count))
+            self.conflict_label.props.visible = True
+        else:
+            self.conflict_label.props.visible = False
+
     def do_realize(self):
         Gtk.Statusbar.do_realize(self)
 

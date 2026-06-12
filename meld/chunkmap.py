@@ -15,6 +15,7 @@
 
 import collections
 import logging
+import math
 from typing import Any, List, Mapping, Tuple
 
 import cairo
@@ -203,10 +204,19 @@ class ChunkMap(Gtk.DrawingArea):
         adj_y = self.adjustment.get_value() / self.adjustment.get_upper()
         adj_h = self.adjustment.get_page_size() / self.adjustment.get_upper()
 
-        context.rectangle(
-            x0 - self.overdraw_padding, round(height_scale * adj_y) + 0.5,
-            x1 + 2 * self.overdraw_padding, round(height_scale * adj_h) - 1,
-        )
+        hx = x0 - self.overdraw_padding
+        hy = round(height_scale * adj_y) + 0.5
+        hw = x1 + 2 * self.overdraw_padding
+        hh = max(round(height_scale * adj_h) - 1, 10)  # Ensure minimum height of 10px
+        hr = 3  # Corner radius
+
+        context.new_sub_path()
+        context.arc(hx + hr, hy + hr, hr, math.pi, 3 * math.pi / 2)
+        context.arc(hx + hw - hr, hy + hr, hr, 3 * math.pi / 2, 2 * math.pi)
+        context.arc(hx + hw - hr, hy + hh - hr, hr, 0, math.pi / 2)
+        context.arc(hx + hr, hy + hh - hr, hr, math.pi / 2, math.pi)
+        context.close_path()
+
         context.fill_preserve()
         Gdk.cairo_set_source_rgba(context, handle_outline)
         context.stroke()

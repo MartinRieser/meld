@@ -255,3 +255,19 @@ def test_filediff_auto_merge_conflict_free(tmp_path):
     assert out_path.read_text() == "line 1 left\nline 2\nline 3 right\n"
 
 
+def test_filediff_conflict_badge():
+    filediff = FileDiff(3)
+    
+    # Verify initial state of middle pane status bar conflict label
+    assert filediff.statusbar[1].conflict_label.props.visible is False
+    
+    # Update conflict count and verify badge visibility/text
+    filediff.statusbar[1].set_conflict_count(5)
+    assert filediff.statusbar[1].conflict_label.props.visible is True
+    assert "5 conflicts" in filediff.statusbar[1].conflict_label.get_text()
+    
+    # Reset conflict count and verify it hides
+    filediff.statusbar[1].set_conflict_count(0)
+    assert filediff.statusbar[1].conflict_label.props.visible is False
+
+

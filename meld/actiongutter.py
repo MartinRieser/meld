@@ -350,6 +350,7 @@ class ActionGutter(Gtk.DrawingArea):
             button_height -= 2
 
             button_style_context = get_style(None, 'button.flat.image-button')
+            button_style_context.add_class('merge-fab')
             if chunk == self.pointer_chunk:
                 button_style_context.set_state(Gtk.StateFlags.PRELIGHT)
 
