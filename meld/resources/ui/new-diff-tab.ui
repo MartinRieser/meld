@@ -177,20 +177,47 @@
                     <property name="position">1</property>
                     <property name="child">
                       <object class="GtkGrid" id="grid1">
-                        <property name="row-spacing">12</property>
+                        <property name="row-spacing">6</property>
                         <property name="column-spacing">12</property>
                         <property name="column-homogeneous">True</property>
                         <property name="margin-top">12</property>
                         <property name="margin-bottom">12</property>
                         <child>
-                          <object class="GtkCheckButton" id="file_three_way_checkbutton">
-                            <property name="label" translatable="1">3-way comparison</property>
-                            <property name="focusable">True</property>
-                            <property name="use-underline">True</property>
-                            <signal name="toggled" handler="on_three_way_checkbutton_toggled" swapped="no"/>
+                          <object class="GtkLabel" id="label_file0">
+                            <property name="label" translatable="1">First File</property>
+                            <property name="halign">start</property>
+                            <style>
+                              <class name="chooser-label"/>
+                            </style>
+                            <layout>
+                              <property name="column">0</property>
+                              <property name="row">0</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label_file1">
+                            <property name="label" translatable="1">Second File</property>
+                            <property name="halign">start</property>
+                            <style>
+                              <class name="chooser-label"/>
+                            </style>
+                            <layout>
+                              <property name="column">1</property>
+                              <property name="row">0</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label_file2">
+                            <property name="label" translatable="1">Third File</property>
+                            <property name="halign">start</property>
+                            <style>
+                              <class name="chooser-label"/>
+                            </style>
                             <layout>
                               <property name="column">2</property>
-                              <property name="row">1</property>
+                              <property name="row">0</property>
                             </layout>
                           </object>
                         </child>
@@ -204,7 +231,7 @@
                             <signal name="file-set" handler="on_file_set" swapped="no"/>
                             <layout>
                               <property name="column">0</property>
-                              <property name="row">0</property>
+                              <property name="row">1</property>
                             </layout>
                           </object>
                         </child>
@@ -218,7 +245,7 @@
                             <signal name="file-set" handler="on_file_set" swapped="no"/>
                             <layout>
                               <property name="column">1</property>
-                              <property name="row">0</property>
+                              <property name="row">1</property>
                             </layout>
                           </object>
                         </child>
@@ -233,7 +260,19 @@
                             <signal name="file-set" handler="on_file_set" swapped="no"/>
                             <layout>
                               <property name="column">2</property>
-                              <property name="row">0</property>
+                              <property name="row">1</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="file_three_way_checkbutton">
+                            <property name="label" translatable="1">3-way comparison</property>
+                            <property name="focusable">True</property>
+                            <property name="use-underline">True</property>
+                            <signal name="toggled" handler="on_three_way_checkbutton_toggled" swapped="no"/>
+                            <layout>
+                              <property name="column">2</property>
+                              <property name="row">2</property>
                             </layout>
                           </object>
                         </child>
@@ -246,11 +285,50 @@
                     <property name="position">2</property>
                     <property name="child">
                       <object class="GtkGrid" id="grid2">
-                        <property name="row-spacing">12</property>
+                        <property name="row-spacing">6</property>
                         <property name="column-spacing">12</property>
                         <property name="column-homogeneous">True</property>
                         <property name="margin-top">12</property>
                         <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkLabel" id="label_dir0">
+                            <property name="label" translatable="1">First Folder</property>
+                            <property name="halign">start</property>
+                            <style>
+                              <class name="chooser-label"/>
+                            </style>
+                            <layout>
+                              <property name="column">0</property>
+                              <property name="row">0</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label_dir1">
+                            <property name="label" translatable="1">Second Folder</property>
+                            <property name="halign">start</property>
+                            <style>
+                              <class name="chooser-label"/>
+                            </style>
+                            <layout>
+                              <property name="column">1</property>
+                              <property name="row">0</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label_dir2">
+                            <property name="label" translatable="1">Third Folder</property>
+                            <property name="halign">start</property>
+                            <style>
+                              <class name="chooser-label"/>
+                            </style>
+                            <layout>
+                              <property name="column">2</property>
+                              <property name="row">0</property>
+                            </layout>
+                          </object>
+                        </child>
                         <child>
                           <object class="GtkFileChooserButton" id="dir_chooser0">
                             <property name="visible">True</property>
@@ -260,7 +338,7 @@
                             <property name="title" translatable="1">Select First Folder</property>
                             <layout>
                               <property name="column">0</property>
-                              <property name="row">0</property>
+                              <property name="row">1</property>
                             </layout>
                           </object>
                         </child>
@@ -273,7 +351,7 @@
                             <property name="title" translatable="1">Select Second Folder</property>
                             <layout>
                               <property name="column">1</property>
-                              <property name="row">0</property>
+                              <property name="row">1</property>
                             </layout>
                           </object>
                         </child>
@@ -287,7 +365,7 @@
                             <property name="title" translatable="1">Select Third Folder</property>
                             <layout>
                               <property name="column">2</property>
-                              <property name="row">0</property>
+                              <property name="row">1</property>
                             </layout>
                           </object>
                         </child>
@@ -299,7 +377,7 @@
                             <signal name="toggled" handler="on_three_way_checkbutton_toggled" swapped="no"/>
                             <layout>
                               <property name="column">2</property>
-                              <property name="row">1</property>
+                              <property name="row">2</property>
                             </layout>
                           </object>
                         </child>
@@ -312,11 +390,24 @@
                     <property name="position">3</property>
                     <property name="child">
                       <object class="GtkGrid" id="grid3">
-                        <property name="row-spacing">12</property>
+                        <property name="row-spacing">6</property>
                         <property name="column-spacing">12</property>
                         <property name="column-homogeneous">True</property>
                         <property name="margin-top">12</property>
                         <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkLabel" id="label_vc0">
+                            <property name="label" translatable="1">Version-Controlled Folder</property>
+                            <property name="halign">start</property>
+                            <style>
+                              <class name="chooser-label"/>
+                            </style>
+                            <layout>
+                              <property name="column">0</property>
+                              <property name="row">0</property>
+                            </layout>
+                          </object>
+                        </child>
                         <child>
                           <object class="GtkFileChooserButton" id="vc_chooser0">
                             <property name="visible">True</property>
@@ -326,7 +417,7 @@
                             <property name="title" translatable="1">Select A Version-Controlled Folder</property>
                             <layout>
                               <property name="column">0</property>
-                              <property name="row">0</property>
+                              <property name="row">1</property>
                             </layout>
                           </object>
                         </child>
