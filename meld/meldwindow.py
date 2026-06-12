@@ -239,30 +239,33 @@ class MeldWindow(Gtk.ApplicationWindow):
         return self.notebook.get_n_pages() > 0
 
     def handle_current_doc_switch(self, page):
-        page.on_container_switch_out_event(self)
+        if page:
+            page.on_container_switch_out_event(self)
 
     @Gtk.Template.Callback()
     def on_switch_page(self, notebook, page, which):
         oldidx = notebook.get_current_page()
         if oldidx >= 0:
             olddoc = notebook.get_nth_page(oldidx)
-            self.handle_current_doc_switch(olddoc)
+            if olddoc:
+                self.handle_current_doc_switch(olddoc)
 
         newdoc = notebook.get_nth_page(which) if which >= 0 else None
 
         self.lookup_action('close').set_enabled(bool(newdoc))
 
-        if hasattr(newdoc, 'scheduler'):
+        if newdoc and hasattr(newdoc, 'scheduler'):
             self.scheduler.add_task(newdoc.scheduler)
 
         self.view_toolbar.foreach(self.view_toolbar.remove)
-        if hasattr(newdoc, 'toolbar_actions'):
+        if newdoc and hasattr(newdoc, 'toolbar_actions'):
             self.view_toolbar.add(newdoc.toolbar_actions)
 
     @Gtk.Template.Callback()
     def after_switch_page(self, notebook, page, which):
         newdoc = notebook.get_nth_page(which)
-        newdoc.on_container_switch_in_event(self)
+        if newdoc:
+            newdoc.on_container_switch_in_event(self)
 
     def action_new_tab(self, action, parameter):
         self.append_new_comparison()
