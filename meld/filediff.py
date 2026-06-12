@@ -460,6 +460,7 @@ class FileDiff(Gtk.Box, MeldDoc):
 
         for gutter in self.actiongutter:
             self.bind_property('action_mode', gutter, 'action_mode')
+            gutter.filediff = self
             gutter.connect(
                 'chunk_action_activated', self.on_chunk_action_activated)
 

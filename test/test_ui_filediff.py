@@ -271,3 +271,32 @@ def test_filediff_conflict_badge():
     assert filediff.statusbar[1].conflict_label.props.visible is False
 
 
+def test_filediff_conflict_menu():
+    filediff = FileDiff(3)
+    
+    # Verify that the action gutter is associated with the FileDiff instance
+    gutter = filediff.actiongutter[0]
+    assert gutter.filediff == filediff
+    
+    # Mock a conflict chunk: (type, start_a, end_a, start_b, end_b)
+    conflict_chunk = ('conflict', 1, 2, 1, 2)
+    
+    # Generate conflict menu
+    menu = gutter._make_conflict_menu(conflict_chunk)
+    assert menu is not None
+    
+    # Verify menu items exist and have correct labels
+    box = menu.box
+    items = []
+    child = box.get_first_child()
+    while child is not None:
+        items.append(child)
+        child = child.get_next_sibling()
+        
+    assert len(items) == 4
+    assert "Keep Left" in items[0].props.label
+    assert "Keep Right" in items[1].props.label
+    assert "Keep Both" in items[2].props.label
+    assert "Keep Both" in items[3].props.label
+
+

@@ -246,6 +246,10 @@ class ActionGutter(Gtk.DrawingArea):
             action.value, self.source_view, self.target_view, chunk)
 
     def activate(self, chunk):
+        if chunk[0] == 'conflict' and getattr(self, 'filediff', None) is not None:
+            conflict_menu = self._make_conflict_menu(chunk)
+            conflict_menu.popup_at_pointer(None)
+            return
 
         action = self._classify_change_actions(chunk)
 
@@ -260,6 +264,42 @@ class ActionGutter(Gtk.DrawingArea):
         elif action == ActionMode.Insert:
             copy_menu = self._make_copy_menu(chunk)
             copy_menu.popup_at_pointer(None)
+
+    def _make_conflict_menu(self, chunk):
+        menu = Gtk.Menu()
+        
+        keep_left = Gtk.MenuItem.new_with_label(_("Keep Left (Accept Left)"))
+        keep_right = Gtk.MenuItem.new_with_label(_("Keep Right (Accept Right)"))
+        keep_both_l = Gtk.MenuItem.new_with_label(_("Keep Both (Left then Right)"))
+        keep_both_r = Gtk.MenuItem.new_with_label(_("Keep Both (Right then Left)"))
+        
+        menu.append(keep_left)
+        menu.append(keep_right)
+        menu.append(keep_both_l)
+        menu.append(keep_both_r)
+        
+        menu.show_all()
+        
+        def on_keep_left(widget):
+            self.filediff.replace_chunk(0, 1, chunk)
+            
+        def on_keep_right(widget):
+            self.filediff.replace_chunk(2, 1, chunk)
+            
+        def on_keep_both_l(widget):
+            self.filediff.copy_chunk(0, 1, chunk, copy_up=False)
+            self.filediff.copy_chunk(2, 1, chunk, copy_up=False)
+            
+        def on_keep_both_r(widget):
+            self.filediff.copy_chunk(2, 1, chunk, copy_up=False)
+            self.filediff.copy_chunk(0, 1, chunk, copy_up=False)
+            
+        keep_left.connect('activate', on_keep_left)
+        keep_right.connect('activate', on_keep_right)
+        keep_both_l.connect('activate', on_keep_both_l)
+        keep_both_r.connect('activate', on_keep_both_r)
+        
+        return menu
 
     def _make_copy_menu(self, chunk):
         copy_menu = Gtk.Menu()
