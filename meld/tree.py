@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from typing import Any
 
 from gi.module import get_introspection_module
 from gi.repository import Gdk, GLib, GObject, Pango
@@ -232,6 +233,15 @@ class DiffTreeStore(SearchableTreeStore):
 
 
 class TreeviewCommon:
+    popup_menu: Any
+    treeview: Any
+    num_panes: Any
+
+    def toggle_row_expansion(self, treeview: Any, path: Any) -> None:
+        if treeview.row_expanded(path):
+            treeview.collapse_row(path)
+        else:
+            treeview.expand_row(path, False)
 
     def on_treeview_popup_menu(self, treeview):
         cursor_path, cursor_col = treeview.get_cursor()

@@ -27,6 +27,7 @@ import subprocess
 from pathlib import PurePath
 from typing import (
     TYPE_CHECKING,
+    Any,
     AnyStr,
     Callable,
     Generator,
@@ -50,10 +51,18 @@ if os.name != "nt":
     from select import select
 else:
     import time
+    from typing import Iterable, List
 
-    def select(rlist, wlist, xlist, timeout):
-        time.sleep(timeout)
-        return rlist, wlist, xlist
+    def select(  # type: ignore[misc]
+        rlist: Iterable[Any],
+        wlist: Iterable[Any],
+        xlist: Iterable[Any],
+        timeout: Optional[float] = None,
+    ) -> Tuple[List[Any], List[Any], List[Any]]:
+        if timeout is not None:
+            time.sleep(timeout)
+        return list(rlist), list(wlist), list(xlist)
+
 
 
 def with_focused_pane(function):
@@ -217,8 +226,8 @@ def get_hide_window_startupinfo():
     if os.name != "nt":
         return None
 
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo = subprocess.STARTUPINFO()  # type: ignore[attr-defined]
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # type: ignore[attr-defined]
     return startupinfo
 
 
@@ -258,12 +267,15 @@ def read_pipe_iter(
                 universal_newlines=True,
                 startupinfo=get_hide_window_startupinfo(),
             )
+            assert self.proc.stdin is not None
             self.proc.stdin.close()
             childout, childerr = self.proc.stdout, self.proc.stderr
+            assert childout is not None
+            assert childerr is not None
             bits: List[str] = []
             while len(bits) == 0 or bits[-1] != "":
                 state = select([childout, childerr], [], [childout, childerr],
-                               yield_interval)
+                                yield_interval)
                 if len(state[0]) == 0:
                     if len(state[2]) == 0:
                         yield None

@@ -28,6 +28,8 @@ class SchedulerBase:
     def __init__(self):
         self.tasks = []
         self.callbacks = []
+        self.suspended_tasks = {}
+        self.task_inputs = {}
 
     def __repr__(self):
         return "%s" % self.tasks
@@ -60,10 +62,17 @@ class SchedulerBase:
             self.tasks.remove(task)
         except ValueError:
             pass
+        for fut, t in list(self.suspended_tasks.items()):
+            if t == task:
+                del self.suspended_tasks[fut]
+        if task in self.task_inputs:
+            del self.task_inputs[task]
 
     def remove_all_tasks(self):
         """Remove all tasks from the scheduler"""
         self.tasks = []
+        self.suspended_tasks = {}
+        self.task_inputs = {}
 
     def add_scheduler(self, sched):
         """Adds a subscheduler as a child task of this scheduler"""
@@ -81,6 +90,22 @@ class SchedulerBase:
         """Overridden function returning the next task to run"""
         raise NotImplementedError
 
+    def _future_done(self, future, task):
+        from gi.repository import GLib
+        GLib.idle_add(self._resume_task, future, task)
+
+    def _resume_task(self, future, task):
+        if future in self.suspended_tasks:
+            del self.suspended_tasks[future]
+            try:
+                res = future.result()
+            except Exception as e:
+                res = e
+            self.task_inputs[task] = res
+            self.tasks.append(task)
+            for callback in self.callbacks:
+                callback(self)
+
     def __call__(self):
         """Run an iteration of the current task"""
         if len(self.tasks):
@@ -91,11 +116,15 @@ class SchedulerBase:
 
     def complete_tasks(self):
         """Run all of the scheduler's current tasks to completion"""
+        from gi.repository import GLib
         while self.tasks_pending():
-            self.iteration()
+            if len(self.tasks) == 0 and len(self.suspended_tasks) > 0:
+                GLib.MainContext.default().iteration(True)
+            else:
+                self.iteration()
 
     def tasks_pending(self):
-        return len(self.tasks) != 0
+        return len(self.tasks) != 0 or len(self.suspended_tasks) != 0
 
     def iteration(self):
         """Perform one iteration of the current task"""
@@ -105,7 +134,14 @@ class SchedulerBase:
             return 0
         try:
             if hasattr(task, "__iter__"):
-                ret = next(task)
+                if task in self.task_inputs:
+                    val = self.task_inputs.pop(task)
+                    if isinstance(val, Exception):
+                        ret = task.throw(val)
+                    else:
+                        ret = task.send(val)
+                else:
+                    ret = next(task)
             else:
                 ret = task()
         except StopIteration:
@@ -113,10 +149,19 @@ class SchedulerBase:
         except Exception:
             traceback.print_exc()
         else:
+            from concurrent.futures import Future
+            if isinstance(ret, Future):
+                self.suspended_tasks[ret] = task
+                if task in self.tasks:
+                    self.tasks.remove(task)
+                ret.add_done_callback(lambda f: self._future_done(f, task))
+                return 1
             if ret:
                 return ret
-        self.tasks.remove(task)
+        if task in self.tasks:
+            self.tasks.remove(task)
         return 0
+
 
 
 class LifoScheduler(SchedulerBase):

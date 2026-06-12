@@ -200,7 +200,10 @@ class MeldWindow(Gtk.ApplicationWindow):
             stop_action = self.lookup_action('stop')
             if stop_action:
                 stop_action.set_enabled(False)
-        return pending
+        runnable = len(self.scheduler.tasks) != 0
+        if not runnable:
+            self.idle_hooked = None
+        return runnable
 
     def on_scheduler_runnable(self, sched):
         if not self.idle_hooked:

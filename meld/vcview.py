@@ -537,10 +537,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
     def on_row_activated(self, treeview, path, tvc):
         it = self.model.get_iter(path)
         if self.model.iter_has_child(it):
-            if self.treeview.row_expanded(path):
-                self.treeview.collapse_row(path)
-            else:
-                self.treeview.expand_row(path, False)
+            self.toggle_row_expansion(self.treeview, path)
         else:
             path = self.model.get_file_path(it)
             if not self.model.is_folder(it, 0, path):

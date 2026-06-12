@@ -28,8 +28,72 @@ from collections import namedtuple
 from decimal import Decimal
 from mmap import ACCESS_COPY, mmap
 from typing import DefaultDict, Dict, List, NamedTuple, Optional, Tuple
+from concurrent.futures import ThreadPoolExecutor
 
 from gi.repository import Gdk, Gio, GLib, GObject, Gtk
+
+scan_executor = ThreadPoolExecutor(max_workers=4)
+
+
+def scan_directory_pane(root, name_filters, ignore_symlinks):
+    # Runs in a background thread!
+    try:
+        entries = os.listdir(root)
+    except OSError as err:
+        return {"error": err}
+
+    results = []
+    encoding_errors = []
+
+    for f in name_filters:
+        if not f.active or f.filter is None:
+            continue
+        entries = [e for e in entries if f.filter.match(e) is None]
+
+    for e in entries:
+        try:
+            e.encode('utf8')
+        except UnicodeEncodeError:
+            invalid = e.encode('utf8', 'surrogatepass')
+            printable = invalid.decode('utf8', 'backslashreplace')
+            encoding_errors.append(printable)
+            continue
+
+        try:
+            s_lnk = os.lstat(os.path.join(root, e))
+        except OSError as err:
+            results.append((e, "lstat_error", err.strerror, None))
+            continue
+
+        is_lnk = stat.S_ISLNK(s_lnk.st_mode)
+        if is_lnk:
+            if ignore_symlinks:
+                continue
+            lnk_key = (s_lnk.st_dev, s_lnk.st_ino)
+            try:
+                s_stat = os.stat(os.path.join(root, e))
+                if stat.S_ISREG(s_stat.st_mode):
+                    results.append((e, "symlink_file", s_stat, lnk_key))
+                elif stat.S_ISDIR(s_stat.st_mode):
+                    results.append((e, "symlink_dir", s_stat, lnk_key))
+            except OSError as err:
+                if err.errno == errno.ENOENT:
+                    error_string = e + ": Dangling symlink"
+                else:
+                    error_string = e + err.strerror
+                results.append((e, "symlink_error", error_string, lnk_key))
+        elif stat.S_ISREG(s_lnk.st_mode):
+            results.append((e, "file", s_lnk, None))
+        elif stat.S_ISDIR(s_lnk.st_mode):
+            results.append((e, "dir", s_lnk, None))
+        else:
+            results.append((e, "unknown", s_lnk, None))
+
+    return {
+        "results": results,
+        "encoding_errors": encoding_errors
+    }
+
 
 # TODO: Don't from-import whole modules
 from meld import misc, tree
@@ -997,66 +1061,65 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             dirs = CanonicalListing(self.num_panes, comparison_options)
             files = CanonicalListing(self.num_panes, comparison_options)
 
+            # Submit directory scans to the ThreadPoolExecutor
+            futures = []
             for pane, root in enumerate(roots):
                 if not os.path.isdir(root):
+                    futures.append((pane, root, None))
+                    continue
+                fut = scan_executor.submit(
+                    scan_directory_pane,
+                    root,
+                    self.name_filters,
+                    self.props.ignore_symlinks
+                )
+                futures.append((pane, root, fut))
+
+            # Retrieve results asynchronously by yielding the futures
+            scan_results = [None] * len(roots)
+            for pane, root, fut in futures:
+                if fut is None:
+                    continue
+                res = yield fut
+                scan_results[pane] = res
+
+            for pane, root in enumerate(roots):
+                res = scan_results[pane]
+                if res is None:
                     continue
 
-                try:
-                    entries = os.listdir(root)
-                except OSError as err:
-                    self.model.add_error(it, err.strerror, pane)
+                if "error" in res:
+                    self.model.add_error(it, res["error"].strerror, pane)
                     differences = True
                     continue
 
-                for f in self.name_filters:
-                    if not f.active or f.filter is None:
-                        continue
-                    entries = [e for e in entries if f.filter.match(e) is None]
+                # Add encoding errors
+                for printable in res["encoding_errors"]:
+                    encoding_errors.append((pane, printable))
 
-                for e in entries:
-                    try:
-                        e.encode('utf8')
-                    except UnicodeEncodeError:
-                        invalid = e.encode('utf8', 'surrogatepass')
-                        printable = invalid.decode('utf8', 'backslashreplace')
-                        encoding_errors.append((pane, printable))
-                        continue
-
-                    try:
-                        s = os.lstat(os.path.join(root, e))
-                    # Covers certain unreadable symlink cases; see bgo#585895
-                    except OSError as err:
-                        error_string = e + err.strerror
+                # Process results
+                for e, type_str, s, extra in res["results"]:
+                    if type_str == "lstat_error":
+                        error_string = e + s
                         self.model.add_error(it, error_string, pane)
                         continue
-
-                    if stat.S_ISLNK(s.st_mode):
-                        if self.props.ignore_symlinks:
-                            continue
-                        key = (s.st_dev, s.st_ino)
+                    elif type_str.startswith("symlink"):
+                        key = extra
                         if key in symlinks_followed:
                             continue
                         symlinks_followed.add(key)
-                        try:
-                            s = os.stat(os.path.join(root, e))
-                            if stat.S_ISREG(s.st_mode):
-                                files.add(pane, e)
-                            elif stat.S_ISDIR(s.st_mode):
-                                dirs.add(pane, e)
-                        except OSError as err:
-                            if err.errno == errno.ENOENT:
-                                error_string = e + ": Dangling symlink"
-                            else:
-                                error_string = e + err.strerror
-                            self.model.add_error(it, error_string, pane)
+
+                        if type_str == "symlink_file":
+                            files.add(pane, e)
+                        elif type_str == "symlink_dir":
+                            dirs.add(pane, e)
+                        elif type_str == "symlink_error":
+                            self.model.add_error(it, s, pane)
                             differences = True
-                    elif stat.S_ISREG(s.st_mode):
+                    elif type_str == "file":
                         files.add(pane, e)
-                    elif stat.S_ISDIR(s.st_mode):
+                    elif type_str == "dir":
                         dirs.add(pane, e)
-                    else:
-                        # FIXME: Unhandled stat type
-                        pass
 
             for pane, f in encoding_errors:
                 invalid_filenames.append((pane, roots[pane], f))
@@ -1520,10 +1583,7 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         if os.path.isfile(rows[pane]):
             self.run_diff_from_iter(it)
         elif os.path.isdir(rows[pane]):
-            if view.row_expanded(path):
-                view.collapse_row(path)
-            else:
-                view.expand_row(path, False)
+            self.toggle_row_expansion(view, path)
 
     @Gtk.Template.Callback()
     def on_treeview_row_expanded(self, view, it, path):
