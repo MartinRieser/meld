@@ -14,6 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Meld Text Buffer wrapper class.
+
+This module subclass GtkSource.Buffer to integrate syntax highlighting, settings bindings,
+undo sequence management, modification time checking, and encoding tracking for Meld.
+"""
+
 import enum
 import logging
 from typing import Any, List, Optional

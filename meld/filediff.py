@@ -14,6 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""File comparison view module.
+
+This module implements visual two-way and three-way file comparisons in Meld. It coordinates:
+1. Document and buffer load/save operations.
+2. Difference calculations via sequence matchers.
+3. Synchronized text scrolling, link maps, and difference chunk visualizations.
+4. Inline editing, merging action handlers, undo/redo state trackers, and accelerators.
+"""
+
 import copy
 import functools
 import logging
