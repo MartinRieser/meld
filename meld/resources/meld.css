@@ -100,12 +100,39 @@ meld-find-bar {
 }
 
 .new-diff-title {
-    opacity: 0.5;
-    font-size: 250%;
+    font-weight: bold;
+    font-size: 240%;
+    margin-bottom: 2px;
+}
+
+.new-diff-subtitle {
+    font-size: 110%;
+    opacity: 0.6;
+    margin-bottom: 12px;
 }
 
 .new-diff-button {
-    font-size: 120%;
+    background-color: @theme_bg_color;
+    border: 1px solid @borders;
+    border-radius: 8px;
+    padding: 4px;
+    transition: all 0.2s ease;
+}
+
+.new-diff-button:hover {
+    background-color: @theme_bg_color;
+    border-color: @theme_selected_bg_color;
+}
+
+.new-diff-button:checked {
+    background-color: @theme_selected_bg_color;
+    color: @theme_selected_fg_color;
+    border-color: @theme_selected_bg_color;
+}
+
+.new-diff-button-label {
+    font-weight: bold;
+    font-size: 100%;
 }
 
 .conflict-badge {
