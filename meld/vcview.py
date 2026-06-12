@@ -294,8 +294,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
 
     def on_container_switch_in_event(self, window):
         super().on_container_switch_in_event(window)
-        # FIXME: open-external should be tied to having a treeview selection
-        self.set_action_enabled("open-external", True)
+        self.on_treeview_selection_changed()
         self.scheduler.add_task(self.on_treeview_cursor_changed)
 
     def on_container_switch_out_event(self, window):
@@ -655,6 +654,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         valid_actions = self.vc.get_valid_actions(path_states)
         action_sensitivity = {
             'compare': 'compare' in valid_actions,
+            'open-external': bool(paths),
             'vc-add': 'add' in valid_actions,
             'vc-unstage': 'unstage' in valid_actions,
             'vc-commit': 'commit' in valid_actions,

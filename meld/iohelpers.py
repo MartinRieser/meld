@@ -8,6 +8,37 @@ from meld.conf import _
 from meld.misc import get_modal_parent, modal_dialog
 
 
+def delete_recursively(gfile: Gio.File) -> None:
+    try:
+        info = gfile.query_info(
+            "standard::type",
+            Gio.FileQueryInfoFlags.NONE,
+            None
+        )
+        file_type = info.get_file_type()
+    except GLib.Error:
+        gfile.delete(None)
+        return
+
+    if file_type == Gio.FileType.DIRECTORY:
+        try:
+            enumerator = gfile.enumerate_children(
+                "standard::name",
+                Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+                None
+            )
+        except GLib.Error:
+            gfile.delete(None)
+            return
+
+        for child_info in enumerator:
+            name = child_info.get_name()
+            child = gfile.get_child(name)
+            delete_recursively(child)
+        enumerator.close(None)
+    gfile.delete(None)
+
+
 def trash_or_confirm(gfile: Gio.File) -> bool:
     """Trash or delete the given Gio.File
 
@@ -37,9 +68,7 @@ def trash_or_confirm(gfile: Gio.File) -> bool:
     file_type = gfile.query_file_type(
         Gio.FileQueryInfoFlags.NONE, None)
 
-    if file_type == Gio.FileType.DIRECTORY:
-        raise RuntimeError(_("Deleting remote folders is not supported"))
-    elif file_type != Gio.FileType.REGULAR:
+    if file_type not in (Gio.FileType.DIRECTORY, Gio.FileType.REGULAR):
         raise RuntimeError(_("Not a file or directory"))
 
     delete_permanently = modal_dialog(
@@ -65,10 +94,7 @@ def trash_or_confirm(gfile: Gio.File) -> bool:
         return False
 
     try:
-        gfile.delete(None)
-        # TODO: Deleting remote folders involves reimplementing
-        # shutil.rmtree for gio, and then calling
-        # self.recursively_update().
+        delete_recursively(gfile)
     except Exception as e:
         raise RuntimeError(str(e))
 
