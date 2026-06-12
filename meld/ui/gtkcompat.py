@@ -1684,3 +1684,28 @@ try:
     _GIGtk.ListStore.set = silence_deprecations(_GIGtk.ListStore.set)
 except (ImportError, AttributeError):
     pass
+
+
+# Gtk.InfoBar compatibility patches for GTK 4
+def infobar_get_content_area(self):
+    revealer = self.get_first_child()
+    if revealer:
+        outer_box = revealer.get_child()
+        if outer_box:
+            return outer_box.get_first_child()
+    return None
+
+
+def infobar_get_action_area(self):
+    revealer = self.get_first_child()
+    if revealer:
+        outer_box = revealer.get_child()
+        if outer_box:
+            content_area = outer_box.get_first_child()
+            if content_area:
+                return content_area.get_next_sibling()
+    return None
+
+
+Gtk.InfoBar.get_content_area = infobar_get_content_area
+Gtk.InfoBar.get_action_area = infobar_get_action_area

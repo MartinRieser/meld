@@ -100,3 +100,16 @@ def test_gui_walkthrough(meld_app):
     window.notebook.set_current_page(0)
     window.action_close()
     assert window.notebook.get_n_pages() == 0
+
+
+def test_infobar_compatibility():
+    from gi.repository import Gtk
+    
+    infobar = Gtk.InfoBar()
+    
+    # Verify our monkey-patches exist and return Gtk.Box objects
+    content_area = infobar.get_content_area()
+    action_area = infobar.get_action_area()
+    
+    assert isinstance(content_area, Gtk.Box)
+    assert isinstance(action_area, Gtk.Box)
