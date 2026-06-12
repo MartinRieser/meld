@@ -125,16 +125,8 @@ jobs:
           path: meld-*.exe
 
   macos:
-    name: macOS (${{ matrix.arch }})
-    strategy:
-      matrix:
-        include:
-          - os: macos-13
-            arch: x86_64
-          - os: macos-14
-            arch: arm64
-      fail-fast: false
-    runs-on: ${{ matrix.os }}
+    name: macOS (arm64)
+    runs-on: macos-14
     needs: [python-package]
     steps:
       - uses: actions/checkout@v4
@@ -207,7 +199,7 @@ jobs:
           brew install create-dmg
           VERSION_TAG="${{ github.ref_name }}"
           VERSION="${VERSION_TAG#v}"
-          DMG_NAME="Meld-${VERSION}-macOS-${{ matrix.arch }}.dmg"
+          DMG_NAME="Meld-${VERSION}-macOS-arm64.dmg"
           mkdir -p dmg-root
           cp -R "$INST_ROOT/dist/Meld.app" dmg-root/
           create-dmg \
@@ -223,7 +215,7 @@ jobs:
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
-          name: meld-macos-${{ matrix.arch }}
+          name: meld-macos-arm64
           path: ${{ steps.dmg.outputs.dmg_name }}
 
   ubuntu-deb:
