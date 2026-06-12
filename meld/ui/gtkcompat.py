@@ -5,6 +5,21 @@
 # License as published by the Free Software Foundation; either
 # version 2 of the License, or (at your option) any later version.
 
+"""GTK 4 and GtkSourceView 5 Compatibility Layer.
+
+This module provides a comprehensive runtime compatibility shim for GNOME/meld to run on
+GTK 4 and GtkSourceView 5. It dynamically patches and wraps deprecated or modified
+PyGObject APIs and provides fallback components for widgets removed in GTK 4 (such as
+GtkEventBox, GtkAlignment, GtkButtonBox, and GtkRecentChooserWidget).
+
+Key adaptations:
+1. GtkIconSize mapping and Image/IconTheme lookup patches.
+2. Signal connection wrapping: maps legacy keyboard/mouse event signals to GTK 4 EventControllers.
+3. Monkey-patches for widgets (Gtk.Widget, Gtk.Grid, Gtk.Notebook) to preserve layout properties.
+4. GtkStyleContext state redirection to prevent native C-level segfaults.
+5. Warning suppression/silencing for legacy GTK 4 deprecations.
+"""
+
 import logging
 
 import gi
@@ -1055,6 +1070,12 @@ Gtk.Menu = CompatMenu
 
 # Emulate other removed containers
 class CompatAlignment(Gtk.Box):
+    """GTK 4 substitute for GtkAlignment.
+
+    In GTK 4, GtkAlignment was removed in favor of widget properties like
+    'halign', 'valign', 'margin', and alignment properties inside layout managers.
+    We emulate GtkAlignment by subclassing Gtk.Box.
+    """
     __gtype_name__ = "GtkAlignment"
 
     def __init__(self, xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0, *args, **kwargs):
@@ -1065,6 +1086,11 @@ Gtk.Alignment = CompatAlignment
 
 
 class CompatEventBox(Gtk.Box):
+    """GTK 4 substitute for GtkEventBox.
+
+    In GTK 4, all widgets can receive input events directly, eliminating the need
+    for a dedicated GtkEventBox container. We subclass Gtk.Box as a direct drop-in replacement.
+    """
     __gtype_name__ = "GtkEventBox"
 
     def __init__(self, *args, **kwargs):
@@ -1489,7 +1515,10 @@ if hasattr(GtkSource, "Map"):
 Gtk.Window.get_size = lambda self: (self.get_width(), self.get_height())
 
 
-# Gtk.StyleContext overrides to prevent C-level segfaults in GTK 4
+# Gtk.StyleContext overrides to prevent C-level segfaults in GTK 4.
+# Querying StyleContext on unrealized or custom widgets in GTK 4 can cause
+# EXC_BAD_ACCESS at gtk_css_node_get_state. We bind the widget reference to
+# the style context and redirect `get_state()` queries to the widget itself.
 original_get_style_context = Gtk.Widget.get_style_context
 
 
@@ -1514,7 +1543,10 @@ Gtk.StyleContext.set_state = lambda self, state: None
 Gtk.StyleContext.save = lambda self: None
 Gtk.StyleContext.restore = lambda self: None
 
-# Dummy GTK 3 style event virtual methods to prevent AttributeError on superclass calls
+# Dummy GTK 3 style event virtual methods to prevent AttributeError on superclass calls.
+# In GTK 4, direct event signals/handlers were removed in favor of EventControllers.
+# We inject these fallback methods to prevent crashes on legacy custom widgets that
+# subclass GTK widgets and still attempt to call superclass event handlers.
 Gtk.Widget.do_button_press_event = lambda self, event: False
 Gtk.Widget.do_button_release_event = lambda self, event: False
 Gtk.Widget.do_motion_notify_event = lambda self, event: False

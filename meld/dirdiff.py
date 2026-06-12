@@ -36,7 +36,13 @@ scan_executor = ThreadPoolExecutor(max_workers=4)
 
 
 def scan_directory_pane(root, name_filters, ignore_symlinks):
-    # Runs in a background thread!
+    """Scan a single directory pane in a background thread.
+
+    Retrieves directory entries, filters them by active name filters, validates
+    UTF-8 encoding, and runs os.lstat (and os.stat for symlinks). Returns a dict
+    with results list and encoding errors list. Runs off the main GUI thread to
+    prevent UI stutters on slow or large filesystems.
+    """
     try:
         entries = os.listdir(root)
     except OSError as err:
@@ -45,12 +51,14 @@ def scan_directory_pane(root, name_filters, ignore_symlinks):
     results = []
     encoding_errors = []
 
+    # Filter out entries matching active name filters
     for f in name_filters:
         if not f.active or f.filter is None:
             continue
         entries = [e for e in entries if f.filter.match(e) is None]
 
     for e in entries:
+        # Validate UTF-8 file name compatibility
         try:
             e.encode('utf8')
         except UnicodeEncodeError:
@@ -65,6 +73,7 @@ def scan_directory_pane(root, name_filters, ignore_symlinks):
             results.append((e, "lstat_error", err.strerror, None))
             continue
 
+        # Check for symbolic links
         is_lnk = stat.S_ISLNK(s_lnk.st_mode)
         if is_lnk:
             if ignore_symlinks:
@@ -1061,7 +1070,7 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             dirs = CanonicalListing(self.num_panes, comparison_options)
             files = CanonicalListing(self.num_panes, comparison_options)
 
-            # Submit directory scans to the ThreadPoolExecutor
+            # Submit directory scans to the ThreadPoolExecutor to run filesystem operations off the main thread.
             futures = []
             for pane, root in enumerate(roots):
                 if not os.path.isdir(root):
@@ -1075,7 +1084,10 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
                 )
                 futures.append((pane, root, fut))
 
-            # Retrieve results asynchronously by yielding the futures
+            # Retrieve results asynchronously by yielding the futures one-by-one.
+            # The scheduler intercepts the Future, suspends this generator task,
+            # and resumes it (sending the result in) on the main GLib idle loop
+            # once the background thread resolves the future.
             scan_results = [None] * len(roots)
             for pane, root, fut in futures:
                 if fut is None:

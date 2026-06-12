@@ -233,17 +233,23 @@ class DiffTreeStore(SearchableTreeStore):
 
 
 class TreeviewCommon:
+    """Mixin class providing common event handlers and behaviors for tree views.
+
+    Shared by DirDiff and VcView.
+    """
     popup_menu: Any
     treeview: Any
     num_panes: Any
 
     def toggle_row_expansion(self, treeview: Any, path: Any) -> None:
+        """Toggle the expand/collapse state of a row path."""
         if treeview.row_expanded(path):
             treeview.collapse_row(path)
         else:
             treeview.expand_row(path, False)
 
     def on_treeview_popup_menu(self, treeview):
+        """Handle context menu popup trigger via keyboard shortcut."""
         cursor_path, cursor_col = treeview.get_cursor()
         if not cursor_path:
             self.popup_menu.popup_at_pointer(None)
@@ -264,7 +270,7 @@ class TreeviewCommon:
         return True
 
     def on_treeview_button_press_event(self, treeview, event):
-
+        """Handle mouse button click event (e.g. right click for context menu)."""
         # If we have multiple treeviews, unselect clear other tree selections
         num_panes = getattr(self, 'num_panes', 1)
         if num_panes > 1:
@@ -295,9 +301,12 @@ class TreeviewCommon:
 
 
 def treeview_search_cb(model, column, key, it, data):
-    # If the key contains a path separator, search the whole path,
-    # otherwise just use the filename. If the key is all lower-case, do a
-    # case-insensitive match.
+    """Callback function used for interactive search within tree views.
+
+    If the search key contains a path separator ('/'), it searches the whole path,
+    otherwise it matches only the file basename. Searches are case-insensitive
+    if the key is entered in all lowercase.
+    """
     abs_search = '/' in key
     lower_key = key.islower()
 

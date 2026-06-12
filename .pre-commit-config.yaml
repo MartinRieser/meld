@@ -1,36 +1,45 @@
+# pre-commit configuration file
+# This file defines git pre-commit hooks that run automatically on 'git commit'.
+# To install: pre-commit install
+# To run manually: pre-commit run --all-files
+
 default_language_version:
     python: python3
 
 repos:
 
+# Meta hooks check the pre-commit configuration itself
 -   repo: meta
     hooks:
-    -   id: check-hooks-apply
-    -   id: check-useless-excludes
+    -   id: check-hooks-apply      # Ensures hooks are defined correctly and apply to files
+    -   id: check-useless-excludes  # Warns if excludes are no longer matching any files
 
+# Standard sanity checks for file formats and cleanup
 -   repo: https://github.com/pre-commit/pre-commit-hooks.git
     rev: v6.0.0
     hooks:
-    -   id: check-added-large-files
-    -   id: check-docstring-first
-    -   id: check-xml
-    -   id: check-yaml
-    -   id: debug-statements
-    -   id: end-of-file-fixer
-    -   id: mixed-line-ending
-    -   id: pretty-format-json
+    -   id: check-added-large-files   # Prevent committing very large files (e.g. binaries)
+    -   id: check-docstring-first     # Verifies that docstrings are placed before imports
+    -   id: check-xml                 # Validates syntax of XML files (.ui files)
+    -   id: check-yaml                # Validates syntax of YAML files
+    -   id: debug-statements          # Prevents debug breakpoints (e.g. pdb, ipdb)
+    -   id: end-of-file-fixer         # Ensures files end with a newline
+    -   id: mixed-line-ending         # Normalizes line endings (LF vs CRLF)
+    -   id: pretty-format-json        # Formats and validates JSON files
         args: [--no-sort-keys, --indent=2]
-    -   id: trailing-whitespace
+    -   id: trailing-whitespace       # Trims trailing whitespace from lines
 
+# Ruff: Fast Python linter and formatter (replaces flake8, isort, black)
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.14.3
   hooks:
-    - id: ruff-check
+    - id: ruff-check                  # Lint and auto-sort imports (via pycodestyle, pyflakes, isort rules)
 
+# Mypy: Static type checking for Python
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
     hooks:
-    -   id: mypy
+    -   id: mypy                      # Runs static type check validation
 
+# Global excludes: do not scan translated .po catalogs
 exclude: ^po/.*\.po$
-
