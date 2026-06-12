@@ -274,6 +274,7 @@ class FileDiff(Gtk.Box, MeldDoc):
             self.differ = Differ
 
         self.warned_bad_comparison = False
+        self.merge_output_saved = False
         self._keymask = 0
         self.meta = {}
         self.lines_removed = 0
@@ -1362,8 +1363,19 @@ class FileDiff(Gtk.Box, MeldDoc):
                 # Ignore any cross-process exceptions that happen when
                 # shutting down our matcher process.
                 log.exception('Failed to shut down matcher process')
-            # TODO: Base the return code on something meaningful for VC tools
-            self.close_signal.emit(0)
+            # Base the return code on whether the merge output file was saved
+            has_merge_output = (
+                self.num_panes >= 2 and
+                self.textbuffer[1].data.savefile is not None
+            )
+            if has_merge_output:
+                if self.merge_output_saved and not self.textbuffer[1].get_modified():
+                    exit_code = 0
+                else:
+                    exit_code = 1
+            else:
+                exit_code = 0
+            self.close_signal.emit(exit_code)
         elif response == Gtk.ResponseType.CANCEL:
             self.state = ComparisonState.Normal
         elif response == Gtk.ResponseType.APPLY:
@@ -1933,6 +1945,12 @@ class FileDiff(Gtk.Box, MeldDoc):
         focus_pane = 0 if self.num_panes < 2 else 1
         self.textview[focus_pane].grab_focus()
 
+        if self.comparison_mode == FileComparisonMode.AutoMerge:
+            if not self.linediffer.unresolved:
+                # No unresolved conflicts, auto-save and exit
+                self.state = ComparisonState.Closing
+                self.save_file(1)
+
     def set_meta(self, meta):
         self.meta = meta
         labels = meta.get('labels', ())
@@ -2322,6 +2340,8 @@ class FileDiff(Gtk.Box, MeldDoc):
         buf.data.update_mtime()
         if pane == 1 and self.num_panes == 3:
             self.meta['middle_saved'] = True
+        if buf.data.savefile is not None:
+            self.merge_output_saved = True
 
         if self.state == ComparisonState.Closing:
             if not any(b.get_modified() for b in self.textbuffer):

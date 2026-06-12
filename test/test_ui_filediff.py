@@ -135,3 +135,123 @@ def test_filediff_save_file(tmp_path):
     # Verify that the file content on disk has been updated
     assert file_a_path.read_text().strip() == "Hello Modified World"
 
+
+def test_filediff_exit_code_no_output():
+    filediff = FileDiff(2)
+    
+    emitted_code = None
+    def on_close(obj, exit_code):
+        nonlocal emitted_code
+        emitted_code = exit_code
+    filediff.close_signal.connect(on_close)
+    
+    filediff.on_delete_event()
+    assert emitted_code == 0
+
+
+def test_filediff_exit_code_with_output_not_saved():
+    filediff = FileDiff(3)
+    filediff.set_merge_output_file(Gio.File.new_for_path("dummy"))
+    
+    emitted_code = None
+    def on_close(obj, exit_code):
+        nonlocal emitted_code
+        emitted_code = exit_code
+    filediff.close_signal.connect(on_close)
+    
+    filediff.on_delete_event()
+    assert emitted_code == 1
+
+
+def test_filediff_exit_code_with_output_saved():
+    filediff = FileDiff(3)
+    filediff.set_merge_output_file(Gio.File.new_for_path("dummy"))
+    filediff.merge_output_saved = True
+    
+    emitted_code = None
+    def on_close(obj, exit_code):
+        nonlocal emitted_code
+        emitted_code = exit_code
+    filediff.close_signal.connect(on_close)
+    
+    filediff.on_delete_event()
+    assert emitted_code == 0
+
+
+def test_filediff_exit_code_with_output_saved_but_modified():
+    from gi.repository import Gtk
+    filediff = FileDiff(3)
+    filediff.set_merge_output_file(Gio.File.new_for_path("dummy"))
+    filediff.merge_output_saved = True
+    
+    # Modify buffer
+    filediff.textbuffer[1].set_text("unsaved modifications")
+    # Mock check_save_modified to simulate choosing "Close without Saving" (returning OK)
+    filediff.check_save_modified = lambda *args: Gtk.ResponseType.OK
+    
+    emitted_code = None
+    def on_close(obj, exit_code):
+        nonlocal emitted_code
+        emitted_code = exit_code
+    filediff.close_signal.connect(on_close)
+    
+    filediff.on_delete_event()
+    assert emitted_code == 1
+
+
+def test_filediff_auto_merge_conflict_free(tmp_path):
+    import time
+    from gi.repository import GLib
+    from meld.const import FileComparisonMode
+    from meld.meldbuffer import MeldBufferState
+    
+    file_l = tmp_path / "left.txt"
+    file_m = tmp_path / "mid.txt"
+    file_r = tmp_path / "right.txt"
+    out_path = tmp_path / "output.txt"
+    
+    # Conflict-free 3-way merge
+    file_l.write_text("line 1 left\nline 2\nline 3\n")
+    file_m.write_text("line 1\nline 2\nline 3\n")
+    file_r.write_text("line 1\nline 2\nline 3 right\n")
+    
+    filediff = FileDiff(3, comparison_mode=FileComparisonMode.AutoMerge)
+    filediff.set_files([
+        Gio.File.new_for_path(str(file_l)),
+        Gio.File.new_for_path(str(file_m)),
+        Gio.File.new_for_path(str(file_r)),
+    ])
+    filediff.set_merge_output_file(Gio.File.new_for_path(str(out_path)))
+    
+    emitted_code = None
+    def on_close(obj, exit_code):
+        nonlocal emitted_code
+        emitted_code = exit_code
+    filediff.close_signal.connect(on_close)
+    
+    # Wait for loading to finish
+    context = GLib.MainContext.default()
+    start_time = time.time()
+    while any(buf.data.state != MeldBufferState.LOAD_FINISHED for buf in filediff.textbuffer[:3]):
+        if time.time() - start_time > 3.0:
+            raise TimeoutError("Loading files took too long")
+        while context.pending():
+            context.iteration(False)
+        time.sleep(0.01)
+        
+    # Execute the comparison and auto-merge tasks
+    filediff.scheduler.complete_tasks()
+    
+    # Wait for saving and close_signal emission
+    start_time = time.time()
+    while emitted_code is None:
+        if time.time() - start_time > 3.0:
+            raise TimeoutError("Auto-merge save/close took too long")
+        while context.pending():
+            context.iteration(False)
+        time.sleep(0.01)
+        
+    assert emitted_code == 0
+    assert out_path.read_text() == "line 1 left\nline 2\nline 3 right\n"
+
+
