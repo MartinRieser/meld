@@ -86,8 +86,11 @@ class SchedulerBase:
         for fut, t in list(self.suspended_tasks.items()):
             if t == task:
                 del self.suspended_tasks[fut]
-        if task in self.task_inputs:
-            del self.task_inputs[task]
+        try:
+            if task in self.task_inputs:
+                del self.task_inputs[task]
+        except TypeError:
+            pass
 
     def remove_all_tasks(self) -> None:
         """Remove all tasks from the scheduler."""
@@ -169,7 +172,12 @@ class SchedulerBase:
         try:
             if hasattr(task, "__iter__"):
                 # If the generator task was suspended, resume it with the Future's result
-                if task in self.task_inputs:
+                has_input = False
+                try:
+                    has_input = task in self.task_inputs
+                except TypeError:
+                    pass
+                if has_input:
                     val = self.task_inputs.pop(task)
                     if isinstance(val, Exception):
                         ret = task.throw(val)

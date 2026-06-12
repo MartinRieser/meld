@@ -972,6 +972,8 @@ class FileDiff(Gtk.Box, MeldDoc):
             self.copy_chunk(from_pane, to_pane, chunk, copy_up=False)
 
     def action_push_change_left(self, *args):
+        if self.cursor.chunk is None:
+            return
         if self.num_panes == 2:
             src, dst = 1, 0
         else:
@@ -979,6 +981,8 @@ class FileDiff(Gtk.Box, MeldDoc):
         self.replace_chunk(src, dst, self.get_action_chunk(src, dst))
 
     def action_push_change_right(self, *args):
+        if self.cursor.chunk is None:
+            return
         if self.num_panes == 2:
             src, dst = 0, 1
         else:
@@ -986,29 +990,41 @@ class FileDiff(Gtk.Box, MeldDoc):
         self.replace_chunk(src, dst, self.get_action_chunk(src, dst))
 
     def action_pull_change_left(self, *args):
+        if self.cursor.chunk is None:
+            return
         src, dst = self.get_action_panes(PANE_LEFT, reverse=True)
         self.replace_chunk(src, dst, self.get_action_chunk(src, dst))
 
     def action_pull_change_right(self, *args):
+        if self.cursor.chunk is None:
+            return
         src, dst = self.get_action_panes(PANE_RIGHT, reverse=True)
         self.replace_chunk(src, dst, self.get_action_chunk(src, dst))
 
     def action_copy_change_left_up(self, *args):
+        if self.cursor.chunk is None:
+            return
         src, dst = self.get_action_panes(PANE_LEFT)
         self.copy_chunk(
             src, dst, self.get_action_chunk(src, dst), copy_up=True)
 
     def action_copy_change_right_up(self, *args):
+        if self.cursor.chunk is None:
+            return
         src, dst = self.get_action_panes(PANE_RIGHT)
         self.copy_chunk(
             src, dst, self.get_action_chunk(src, dst), copy_up=True)
 
     def action_copy_change_left_down(self, *args):
+        if self.cursor.chunk is None:
+            return
         src, dst = self.get_action_panes(PANE_LEFT)
         self.copy_chunk(
             src, dst, self.get_action_chunk(src, dst), copy_up=False)
 
     def action_copy_change_right_down(self, *args):
+        if self.cursor.chunk is None:
+            return
         src, dst = self.get_action_panes(PANE_RIGHT)
         self.copy_chunk(
             src, dst, self.get_action_chunk(src, dst), copy_up=False)

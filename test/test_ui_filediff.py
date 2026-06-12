@@ -300,3 +300,47 @@ def test_filediff_conflict_menu():
     assert "Keep Both" in items[3].props.label
 
 
+def test_scheduler_unhashable_task():
+    from meld.task import FifoScheduler
+    
+    scheduler = FifoScheduler()
+    
+    # Define a custom unhashable class
+    class UnhashableTask:
+        def __init__(self):
+            self.called = False
+        def __call__(self):
+            self.called = True
+            return False
+        def __hash__(self):
+            raise TypeError("unhashable type")
+            
+    task = UnhashableTask()
+    
+    # Should not raise TypeError during add or remove
+    scheduler.add_task(task)
+    scheduler.remove_task(task)
+    
+    # Let's add it again and run it
+    scheduler.add_task(task)
+    assert not task.called
+    scheduler.iteration()
+    assert task.called
+
+
+def test_filediff_actions_no_chunk():
+    filediff = FileDiff(3)
+    # Ensure chunk is None
+    filediff.cursor.chunk = None
+    
+    # The following action methods should return early without throwing ValueError
+    filediff.action_push_change_left()
+    filediff.action_push_change_right()
+    filediff.action_pull_change_left()
+    filediff.action_pull_change_right()
+    filediff.action_copy_change_left_up()
+    filediff.action_copy_change_right_up()
+    filediff.action_copy_change_left_down()
+    filediff.action_copy_change_right_down()
+
+
