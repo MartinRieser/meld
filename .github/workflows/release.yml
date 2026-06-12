@@ -102,10 +102,10 @@ jobs:
 
       - name: Build and package with PyInstaller and NSIS
         run: |
-          meson setup --prefix=/ build .
+          meson setup build .
           meson compile -v -C build
-          meson install -C build --destdir=install
-          INST_ROOT=$(find $PWD/build/install -name "meld" -path "*/bin/meld" -exec dirname {} \;)
+          DESTDIR=$PWD/build/inst meson install -C build
+          INST_ROOT=$(find $PWD/build/inst -name "meld" -path "*/bin/meld" -exec dirname {} \;)
           INST_ROOT=$(dirname "$INST_ROOT")
           echo "Install root: $INST_ROOT"
           cp "$GITHUB_WORKSPACE/windows/meld.spec" "$INST_ROOT/"
@@ -116,6 +116,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/windows/meld.nsis" dist/
           cd dist
           makensis ./meld.nsis
+          mv meld-*.exe "$GITHUB_WORKSPACE/"
 
       - name: Upload installer
         uses: actions/upload-artifact@v4

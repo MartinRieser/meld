@@ -22,22 +22,7 @@ def get_install_languages():
     return [p.parents[1].name for p in mo_paths]
 
 
-def get_repo_path():
-    return subprocess.run(["git", "rev-parse", "--show-toplevel"],
-        encoding="utf-8",
-        capture_output=True,
-        text=True,
-    ).stdout.strip("\n")
-
-# NOTE: First attempt in path handling was to do this nicely and find the repo
-# root and do meson introspection and file copying relative to that. This
-# didn't work because the absolute paths somehow got mangled from being
-# msys-root-based paths to being /c/home/whatever style paths. In the end,
-# just using "../.." worked.
-
 def get_version() -> Version:
-    cwd = get_repo_path()
-
     projectinfo = json.loads(
         subprocess.run(
             ["meson", "introspect", "meson.build", "--projectinfo"],
