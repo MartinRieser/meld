@@ -1,7 +1,10 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+_repo_root = Path(os.environ.get("GITHUB_WORKSPACE", "../.."))
 
 
 def get_install_tree_library_path():
@@ -21,7 +24,8 @@ def get_install_languages():
 def get_version():
     projectinfo = json.loads(
         subprocess.run(
-            ["meson", "introspect", "../meson.build", "--projectinfo"],
+            ["meson", "introspect", "meson.build", "--projectinfo"],
+            cwd=str(_repo_root),
             encoding="utf-8",
             capture_output=True,
             text=True,

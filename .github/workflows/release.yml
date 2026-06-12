@@ -122,7 +122,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: meld-windows-x86_64
-          path: install/dist/meld-*.exe
+          path: meld-*.exe
 
   macos:
     name: macOS (${{ matrix.arch }})

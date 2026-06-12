@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -6,6 +7,8 @@ from pathlib import Path
 
 import pyinstaller_versionfile
 from packaging.version import Version
+
+_repo_root = Path(os.environ.get("GITHUB_WORKSPACE", "../.."))
 
 
 def get_install_tree_library_path():
@@ -26,7 +29,7 @@ def get_version() -> Version:
     projectinfo = json.loads(
         subprocess.run(
             ["meson", "introspect", "meson.build", "--projectinfo"],
-            cwd="../..",
+            cwd=str(_repo_root),
             encoding="utf-8",
             capture_output=True,
             text=True,
@@ -38,7 +41,7 @@ def get_version() -> Version:
 
 def copy_repo_files():
     shutil.copy2(
-        "../../data/icons/org.gnome.meld.ico",
+        str(_repo_root / "data/icons/org.gnome.meld.ico"),
         "./meld.ico",
     )
 
