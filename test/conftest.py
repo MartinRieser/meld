@@ -83,7 +83,12 @@ from meld.meldapp import MeldApp
 
 @pytest.fixture(scope="session")
 def meld_app():
-    app = MeldApp()
+    orig_app_id = meld.conf.APPLICATION_ID
+    meld.conf.APPLICATION_ID = f"{orig_app_id}.TestPid{os.getpid()}"
+    try:
+        app = MeldApp()
+    finally:
+        meld.conf.APPLICATION_ID = orig_app_id
     app.register(None)
     yield app
     app.quit()
