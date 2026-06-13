@@ -1,68 +1,35 @@
-import importlib.machinery
-import importlib.util
+import os
 import sys
-from unittest import mock
-
 import pytest
 
-import meld.ui.gtkcompat  # noqa: F401 - side effect: calls gi.require_version()
+# Dynamic loading hack for meld.conf when running uninstalled (from git checkout)
+melddir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if os.path.exists(os.path.join(melddir, "meld.doap")):
+    sys.path.insert(0, melddir)
+    import importlib.machinery
+    import importlib.util
+    try:
+        loader = importlib.machinery.SourceFileLoader(
+            'meld.conf', os.path.join(melddir, 'meld/conf.py.in'))
+        spec = importlib.util.spec_from_loader(loader.name, loader)
+        mod = importlib.util.module_from_spec(spec)
+        loader.exec_module(mod)
+        import meld
+        meld.conf = mod
+        sys.modules['meld.conf'] = mod
+    except Exception as e:
+        print(f"Warning: failed to dynamically load meld.conf from conf.py.in: {e}", file=sys.stderr)
 
-
-@pytest.fixture(autouse=True)
-def default_icon_theme():
-    # Our tests need to run on a system with no default display, so all
-    # our display-specific get_default() stuff will break.
-
-    from gi.repository import Gtk
-
-    with mock.patch(
-        "gi.repository.Gtk.IconTheme.get_default",
-        mock.Mock(spec=Gtk.IconTheme.get_default),
-    ):
-        yield
-
-
-@pytest.fixture(autouse=True)
-def template_resources():
-    import gi  # noqa: F401
-
-    with mock.patch(
-        "gi._gtktemplate.validate_resource_path", mock.Mock(return_value=True)
-    ):
-        yield
-
-
-def import_meld_conf():
-    loader = importlib.machinery.SourceFileLoader("meld.conf", "./meld/conf.py.in")
-    spec = importlib.util.spec_from_loader(loader.name, loader)
-    mod = importlib.util.module_from_spec(spec)
-    loader.exec_module(mod)
-
-    import meld
-
-    meld.conf = mod
-    sys.modules["meld.conf"] = mod
-
-
-import_meld_conf()
-
-
-def setup_test_resources_and_settings():
-    import os
-    import subprocess
-
-    from gi.repository import Gio, GtkSource
-
-    import meld
-    from meld.settings import create_settings
-
+# Initialize uninstalled paths and resource overlays if meld.conf was successfully loaded
+if 'meld.conf' in sys.modules:
     meld.conf.uninstalled()
-    melddir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-    # Compile and load resources
-    resource_filename = meld.conf.APPLICATION_ID + ".gresource"
-    resource_file = os.path.join(meld.conf.DATADIR, resource_filename)
+# Compile and register resources before importing any UI components
+resource_filename = meld.conf.APPLICATION_ID + ".gresource" if 'meld.conf' in sys.modules else "org.gnome.Meld.gresource"
+resource_file = os.path.join(meld.conf.DATADIR, resource_filename) if 'meld.conf' in sys.modules else os.path.join(melddir, "data", resource_filename)
 
+if not os.path.exists(resource_file):
+    import subprocess
     try:
         subprocess.call(
             [
@@ -72,43 +39,51 @@ def setup_test_resources_and_settings():
                 "--sourcedir=data/icons/hicolor",
                 "meld/resources/meld.gresource.xml",
             ],
-            cwd=melddir,
+            cwd=melddir
         )
+    except FileNotFoundError:
+        print("Warning: glib-compile-resources command not found; skipping compilation.", file=sys.stderr)
     except Exception as e:
-        print("Failed glib-compile-resources:", e)
+        print(f"Warning: glib-compile-resources failed: {e}", file=sys.stderr)
 
+from gi.repository import Gio
+if os.path.exists(resource_file):
     try:
         resources = Gio.resource_load(resource_file)
         Gio.resources_register(resources)
     except Exception as e:
-        print("Failed loading resource:", e)
+        print(f"Warning: failed to register GResource file: {e}", file=sys.stderr)
 
-    # Compile schemas
-    try:
-        subprocess.call(["glib-compile-schemas", meld.conf.DATADIR], cwd=melddir)
-    except Exception as e:
-        print("Failed glib-compile-schemas:", e)
+# Setup GTK compatibility layers and require Gtk 4.0
+import meld.ui.gtkcompat
 
-    # Style Scheme paths
+# Register style schemes search path and prepare scheme files
+if 'meld.conf' in sys.modules:
+    from gi.repository import GtkSource
     style_path = os.path.join(meld.conf.DATADIR, "styles")
-    if not os.path.exists(style_path):
-        os.makedirs(style_path, exist_ok=True)
     GtkSource.StyleSchemeManager.get_default().append_search_path(style_path)
 
-    for style in {"meld-base", "meld-dark"}:
-        path = os.path.join(style_path, "{}.style-scheme.xml".format(style))
+    for style in {'meld-base', 'meld-dark'}:
+        path = os.path.join(style_path, '{}.style-scheme.xml'.format(style))
         if not os.path.exists(path):
             import shutil
+            try:
+                shutil.copyfile(path + '.in', path)
+            except Exception as e:
+                print(f"Warning: failed to copy style scheme template {style}: {e}", file=sys.stderr)
 
-            shutil.copyfile(
-                os.path.join(
-                    melddir, "data/styles", "{}.style-scheme.xml.in".format(style)
-                ),
-                path,
-            )
+# Initialize GSettings settings
+import meld.settings
+try:
+    meld.settings.create_settings()
+except Exception as e:
+    print(f"Warning: failed to create settings: {e}", file=sys.stderr)
 
-    # Initialize GSettings settings
-    create_settings()
+from meld.meldapp import MeldApp
 
-
-setup_test_resources_and_settings()
+@pytest.fixture(scope="session")
+def meld_app():
+    app = MeldApp()
+    app.register(None)
+    yield app
+    app.quit()

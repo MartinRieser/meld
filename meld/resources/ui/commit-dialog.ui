@@ -4,9 +4,7 @@
   <template class="CommitDialog" parent="GtkDialog">
     <property name="title" translatable="1">Commit</property>
     <property name="modal">1</property>
-    <property name="window_position">center</property>
     <property name="default_width">450</property>
-    <property name="type_hint">dialog</property>
     <child internal-child="content_area">
       <object class="GtkBox" id="dialog-vbox1">
         <property name="orientation">vertical</property>
@@ -36,7 +34,8 @@
                     <child>
                       <object class="GtkLabel" id="label1">
                         <property name="halign">center</property>
-                        <property name="xpad">12</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
                       </object>
                     </child>
                     <child>
@@ -87,7 +86,8 @@
                     <child>
                       <object class="GtkLabel" id="label4">
                         <property name="halign">center</property>
-                        <property name="xpad">12</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
                       </object>
                     </child>
                     <child>
@@ -162,8 +162,6 @@
             <property name="focusable">1</property>
 
             <property name="use_underline">1</property>
-            <accelerator key="Return" signal="activate" modifiers="GDK_CONTROL_MASK"/>
-            <accelerator key="KP_Enter" signal="activate" modifiers="GDK_CONTROL_MASK"/>
           </object></child>
       </object>
     </child>

@@ -2,8 +2,6 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <template class="PushDialog" parent="GtkMessageDialog">
-    <property name="type_hint">dialog</property>
-    <property name="skip_taskbar_hint">True</property>
     <property name="message_type">question</property>
     <property name="text" translatable="1">Push local commits to remote?</property>
     <property name="secondary_text" translatable="1">The commits to be pushed are determined by your version control system.</property>

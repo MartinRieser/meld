@@ -74,3 +74,30 @@ def test_vcview_scan_git(tmp_path):
 
     assert "added.txt" in files_found
     assert files_found["added.txt"] == _vc.STATE_NEW
+
+
+def test_case_insensitive_path_dict():
+    from meld.vc._vc import CaseInsensitivePathDict, CaseInsensitivePathDefaultDict
+
+    d = CaseInsensitivePathDict()
+    d["C:\\Path\\To\\File.txt"] = "val"
+    assert d["c:\\path\\to\\file.txt"] == "val"
+    assert "c:\\path\\to\\file.txt" in d
+
+    dd = CaseInsensitivePathDefaultDict(set)
+    dd["C:\\Path\\To\\Folder"].add("file.txt")
+    assert "file.txt" in dd["c:\\path\\to\\folder"]
+
+
+def test_commit_dialog():
+    vcview = VcView()
+    import meld.vc.git
+    vcview.vc = meld.vc.git.Vc(os.path.abspath('.'))
+    vcview.location = vcview.vc.location
+    
+    from meld.ui.vcdialogs import CommitDialog
+    dialog = CommitDialog(vcview)
+    assert dialog is not None
+    dialog.destroy()
+
+

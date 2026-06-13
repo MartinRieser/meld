@@ -3,9 +3,6 @@
   <requires lib="gtk" version="4.0"/>
   <template class="PatchDialog" parent="GtkDialog">
     <property name="title" translatable="1">Format as Patch</property>
-    <property name="type_hint">dialog</property>
-    <property name="skip_taskbar_hint">True</property>
-    <property name="skip_pager_hint">True</property>
     <child internal-child="content_area">
       <object class="GtkBox" id="dialog-vbox3">
         <property name="orientation">vertical</property>

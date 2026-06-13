@@ -2,8 +2,6 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <object class="GtkMessageDialog" id="save-confirm-dialog">
-    <property name="type_hint">dialog</property>
-    <property name="skip_taskbar_hint">True</property>
     <property name="message_type">warning</property>
     <property name="text" translatable="1">Save changes to documents before closing?</property>
     <property name="secondary_text" translatable="1">If you don’t save, changes will be permanently lost.</property>

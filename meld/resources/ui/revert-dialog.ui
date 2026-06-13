@@ -2,8 +2,6 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <object class="GtkMessageDialog" id="revert_dialog">
-    <property name="type_hint">dialog</property>
-    <property name="skip_taskbar_hint">True</property>
     <property name="message_type">question</property>
     <property name="text" translatable="1">Discard unsaved changes to documents?</property>
     <property name="secondary_text" translatable="1">Changes made to the following documents will be permanently lost:</property>

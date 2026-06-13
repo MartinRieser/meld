@@ -236,6 +236,7 @@ def widget_set_border_width(self, width):
 
 Gtk.Widget.set_border_width = widget_set_border_width
 Gtk.Widget.get_border_width = lambda self: self.get_margin_start()
+Gtk.Widget.get_toplevel = lambda self: self.get_root() or self.get_native()
 
 # show_all is no-op
 Gtk.Widget.show_all = lambda self: None
@@ -340,6 +341,7 @@ def widget_override_font(self, font_desc):
 
 
 Gtk.Widget.override_font = widget_override_font
+Gtk.Widget.modify_font = widget_override_font
 
 
 # Widget.remove mapping

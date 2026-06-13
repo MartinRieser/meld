@@ -19,7 +19,6 @@
     <property name="title" translatable="1">Preferences</property>
     <property name="modal">1</property>
     <property name="destroy_with_parent">1</property>
-    <property name="type_hint">dialog</property>
     <property name="use-header-bar">1</property>
     <signal name="response" handler="on_response" swapped="no"/>
     <child type="titlebar">

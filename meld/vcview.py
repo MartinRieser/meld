@@ -467,6 +467,11 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             self.state_actions.get(k) for k in self.props.status_filters]
         filters = [a[1] for a in active_actions if a and a[1]]
 
+        print("DEBUG SCAN START:", rootname)
+        print("DEBUG status_filters:", self.props.status_filters)
+        print("DEBUG active_actions:", active_actions)
+        print("DEBUG filters:", filters)
+
         while todo:
             # This needs to happen sorted and depth-first in order for our row
             # references to remain valid while we traverse.
@@ -475,8 +480,14 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             it = self.model.get_iter(treepath)
             yield _("Scanning %s") % path[display_prefix:]
 
+            print("DEBUG Scanning path:", path)
             entries = self.vc.get_entries(path)
-            entries = [e for e in entries if any(f(e) for f in filters)]
+            all_entries = list(entries)
+            print(f"DEBUG All entries under {path}:")
+            for e in all_entries:
+                matches = [f.__name__ for f in filters if f(e)]
+                print(f"  Entry name={e.name} isdir={e.isdir} state={e.state} matches_filters={matches}")
+            entries = [e for e in all_entries if any(f(e) for f in filters)]
             entries = sorted(entries, key=lambda e: e.name)
             entries = sorted(entries, key=lambda e: not e.isdir)
             for e in entries:

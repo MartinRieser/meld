@@ -8,12 +8,6 @@ from meld.meldwindow import MeldWindow
 from meld.newdifftab import NewDiffTab, DiffType
 
 
-@pytest.fixture(scope="module")
-def meld_app():
-    app = MeldApp()
-    app.register(None)
-    yield app
-    app.quit()
 
 
 def test_gui_walkthrough(meld_app):

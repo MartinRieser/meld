@@ -141,6 +141,35 @@ class SafePopen(subprocess.Popen):
             super().__del__()
 
 
+class CaseInsensitivePathDict(dict):
+    def __setitem__(self, key, value):
+        super().__setitem__(os.path.normcase(key), value)
+    def __getitem__(self, key):
+        return super().__getitem__(os.path.normcase(key))
+    def __contains__(self, key):
+        return super().__contains__(os.path.normcase(key))
+    def get(self, key, default=None):
+        return super().get(os.path.normcase(key), default)
+    def pop(self, key, default=None):
+        return super().pop(os.path.normcase(key), default)
+    def update(self, other):
+        for k, v in other.items():
+            self[k] = v
+
+
+class CaseInsensitivePathDefaultDict(collections.defaultdict):
+    def __setitem__(self, key, value):
+        super().__setitem__(os.path.normcase(key), value)
+    def __getitem__(self, key):
+        return super().__getitem__(os.path.normcase(key))
+    def __contains__(self, key):
+        return super().__contains__(os.path.normcase(key))
+    def get(self, key, default=None):
+        return super().get(os.path.normcase(key), default)
+    def pop(self, key, default=None):
+        return super().pop(os.path.normcase(key), default)
+
+
 class Vc:
 
     VC_DIR: ClassVar[str]
@@ -160,9 +189,9 @@ class Vc:
         self.root, self.location = self.is_in_repo(path)
         if not self.root:
             raise ValueError
-        self._tree_cache = {}
-        self._tree_meta_cache = {}
-        self._tree_missing_cache = collections.defaultdict(set)
+        self._tree_cache = CaseInsensitivePathDict()
+        self._tree_meta_cache = CaseInsensitivePathDict()
+        self._tree_missing_cache = CaseInsensitivePathDefaultDict(set)
 
     def run(self, *args, use_locale_encoding=True):
         """Return subprocess running VC with `args` at VC's location
@@ -290,8 +319,8 @@ class Vc:
         its `location` will be recursively refreshed.
         """
         if path is None:
-            self._tree_cache = {}
-            self._tree_missing_cache = collections.defaultdict(set)
+            self._tree_cache = CaseInsensitivePathDict()
+            self._tree_missing_cache = CaseInsensitivePathDefaultDict(set)
             path = './'
         self._update_tree_state_cache(path)
 
