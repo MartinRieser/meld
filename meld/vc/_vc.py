@@ -88,7 +88,7 @@ class Entry:
     }
 
     def __init__(self, path, name, state, isdir, options=None):
-        self.path = path
+        self.path = os.path.realpath(os.path.abspath(path)) if path else path
         self.name = name
         self.state = state
         self.isdir = isdir
@@ -404,6 +404,7 @@ class Vc:
 
     @classmethod
     def is_in_repo(cls, path):
+        path = os.path.realpath(os.path.abspath(path))
         root = None
         location = path if os.path.isdir(path) else os.path.dirname(path)
 

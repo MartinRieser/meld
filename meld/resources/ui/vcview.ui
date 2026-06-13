@@ -205,7 +205,9 @@
         <property name="can_focus">True</property>
         <property name="orientation">vertical</property>
         <property name="position">250</property>
-        <child>
+        <property name="hexpand">True</property>
+        <property name="vexpand">True</property>
+        <child type="start">
           <object class="GtkScrolledWindow" id="scrolledwindow">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -262,7 +264,7 @@
           </object>
           
         </child>
-        <child>
+        <child type="end">
           <object class="GtkBox" id="console_vbox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>

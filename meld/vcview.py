@@ -277,11 +277,11 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             weight=tree.COL_WEIGHT,
             strikethrough=tree.COL_STRIKE)
         self.location_column.set_attributes(
-            self.location_renderer, markup=COL_LOCATION)
+            self.location_renderer, text=COL_LOCATION)
         self.status_column.set_attributes(
-            self.status_renderer, markup=COL_STATUS)
+            self.status_renderer, text=COL_STATUS)
         self.extra_column.set_attributes(
-            self.extra_renderer, markup=COL_OPTIONS)
+            self.extra_renderer, text=COL_OPTIONS)
 
         self.consolestream = ConsoleStream(self.consoleview)
         self.location = None
@@ -462,15 +462,10 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         symlinks_followed = set()
         todo = [(self.model.get_path(iterstart), rootname)]
 
-        flattened = 'flatten' in self.props.status_filters
+        flattened = "flatten" in self.props.status_filters
         active_actions = [
             self.state_actions.get(k) for k in self.props.status_filters]
         filters = [a[1] for a in active_actions if a and a[1]]
-
-        print("DEBUG SCAN START:", rootname)
-        print("DEBUG status_filters:", self.props.status_filters)
-        print("DEBUG active_actions:", active_actions)
-        print("DEBUG filters:", filters)
 
         while todo:
             # This needs to happen sorted and depth-first in order for our row
@@ -480,14 +475,8 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             it = self.model.get_iter(treepath)
             yield _("Scanning %s") % path[display_prefix:]
 
-            print("DEBUG Scanning path:", path)
             entries = self.vc.get_entries(path)
-            all_entries = list(entries)
-            print(f"DEBUG All entries under {path}:")
-            for e in all_entries:
-                matches = [f.__name__ for f in filters if f(e)]
-                print(f"  Entry name={e.name} isdir={e.isdir} state={e.state} matches_filters={matches}")
-            entries = [e for e in all_entries if any(f(e) for f in filters)]
+            entries = [e for e in entries if any(f(e) for f in filters)]
             entries = sorted(entries, key=lambda e: e.name)
             entries = sorted(entries, key=lambda e: not e.isdir)
             for e in entries:
@@ -655,6 +644,8 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         self.refresh()
 
     def on_treeview_selection_changed(self, selection=None):
+        if self.vc is None:
+            return
         if selection is None:
             selection = self.treeview.get_selection()
         model, rows = selection.get_selected_rows()
@@ -887,6 +878,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             self._update_item_state(it, entry)
 
     def find_iter_by_name(self, name):
+        name = os.path.realpath(os.path.abspath(name))
         it = self.model.get_iter_first()
         path = self.model.get_file_path(it)
         while it:

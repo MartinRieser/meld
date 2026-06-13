@@ -34,6 +34,7 @@ gi.require_version("GtkSource", "5")
 from gi.repository import (  # noqa: E402
     Gdk,
     GdkPixbuf,
+    GLib,
     GObject,
     Graphene,
     Gtk,
@@ -1107,12 +1108,29 @@ def append_element(path, selector):
     pass
 
 
+class MockStyleContext:
+    def __init__(self):
+        self._state = Gtk.StateFlags.NORMAL
+
+    def add_class(self, class_name):
+        pass
+
+    def remove_class(self, class_name):
+        pass
+
+    def set_state(self, state):
+        self._state = state
+
+    def get_state(self):
+        return self._state
+
+
 def create_context_for_path(path, parent):
-    return Gtk.StyleContext()
+    return MockStyleContext()
 
 
 def get_style(parent, selector):
-    return Gtk.StyleContext()
+    return MockStyleContext()
 
 
 def query_size(context, width, height):
@@ -1711,3 +1729,30 @@ def infobar_get_action_area(self):
 
 Gtk.InfoBar.get_content_area = infobar_get_content_area
 Gtk.InfoBar.get_action_area = infobar_get_action_area
+
+
+# Gtk.Dialog.run compatibility for GTK 4
+def dialog_run(self):
+    loop = GLib.MainLoop()
+    response_id = Gtk.ResponseType.NONE
+
+    def on_response(dialog, response):
+        nonlocal response_id
+        response_id = response
+        loop.quit()
+
+    handler_id = self.connect("response", on_response)
+    self.present()
+    loop.run()
+    self.disconnect(handler_id)
+    return response_id
+
+
+Gtk.Dialog.run = dialog_run
+
+
+# Initialize detailed UI activity logging
+from meld.ui.debug import install_ui_debug_hooks  # noqa: E402
+
+install_ui_debug_hooks()
+

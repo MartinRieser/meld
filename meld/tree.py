@@ -224,11 +224,7 @@ class DiffTreeStore(SearchableTreeStore):
             else self._none_of_cols.get(self.column_index(col, pane))
             for col, val in keys_values.items()
         }
-        if _GIGtk and treeiter:
-            columns = [col for col in safe_keys_values.keys()]
-            values = [val for val in safe_keys_values.values()]
-            _GIGtk.TreeStore.set(self, treeiter, columns, values)
-        else:
+        if treeiter:
             self.set(treeiter, safe_keys_values)
 
 

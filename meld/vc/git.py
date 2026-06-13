@@ -218,6 +218,7 @@ class Vc(_vc.Vc):
         return f.name, True
 
     def get_repo_relative_path(self, path):
+        path = os.path.realpath(os.path.abspath(path))
         root_prefix = self.root if self.root == "/" else self.root + os.path.sep
         if not path.startswith(root_prefix):
             raise _vc.InvalidVCPath(self, path, "Path not in repository")
@@ -313,7 +314,7 @@ class Vc(_vc.Vc):
 
                 # Identify unversioned files
                 proc = self.run(
-                    "ls-files", "--others", "--exclude-standard", path)
+                    "ls-files", "--others", "--exclude-standard", "--directory", path)
                 unversioned_entries = proc.stdout.read().split("\n")[:-1]
 
                 break

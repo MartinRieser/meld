@@ -327,18 +327,31 @@ def setup_settings():
 def setup_logging():
     log = logging.getLogger()
 
-    # If we're running uninstalled and from Git, turn up the logging level
-    if uninstalled and devel:
+    debug_mode = "MELD_DEBUG" in os.environ or "--debug" in sys.argv
+
+    if debug_mode:
+        log.setLevel(logging.DEBUG)
+    elif uninstalled and devel:
         log.setLevel(logging.INFO)
     else:
         log.setLevel(logging.CRITICAL)
+
+    formatter = logging.Formatter("%(asctime)s %(levelname)s "
+                                  "%(name)s: %(message)s")
 
     if sys.platform == 'win32':
         from gi.repository import GLib
 
         log_path = os.path.join(GLib.get_user_data_dir(), "meld.log")
-        handler = logging.FileHandler(log_path)
-        log.setLevel(logging.INFO)
+        try:
+            handler = logging.FileHandler(log_path)
+            handler.setFormatter(formatter)
+            log.addHandler(handler)
+        except Exception:
+            pass
+
+        if not debug_mode:
+            log.setLevel(logging.INFO)
 
         # Set excepthook so that we get exceptions on Windows
         def logging_except_hook(exc_type, exc_instance, tb):
@@ -346,13 +359,15 @@ def setup_logging():
                 'Unhandled exception', exc_info=(exc_type, exc_instance, tb))
 
         sys.excepthook = logging_except_hook
-    else:
-        handler = logging.StreamHandler()
 
-    formatter = logging.Formatter("%(asctime)s %(levelname)s "
-                                  "%(name)s: %(message)s")
-    handler.setFormatter(formatter)
-    log.addHandler(handler)
+    if debug_mode or sys.platform != 'win32':
+        stream_handler = logging.StreamHandler(sys.stderr)
+        stream_handler.setFormatter(formatter)
+        log.addHandler(stream_handler)
+        if debug_mode:
+            print("Meld Debug/Logging Mode Enabled", file=sys.stderr)
+            if sys.platform == 'win32':
+                print(f"File log path: {log_path}", file=sys.stderr)
 
 
 def setup_glib_logging():
