@@ -193,6 +193,12 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         MeldDoc.__init__(self)
         bind_settings(self)
 
+        # By default, show only files with changes, not all files
+        filters = list(self.props.status_filters or [])
+        if 'normal' in filters:
+            filters.remove('normal')
+            self.props.status_filters = filters
+
         binding_set_names = ("GtkScrolledWindow", "GtkTreeView")
         for set_name in binding_set_names:
             binding_set = Gtk.binding_set_find(set_name)
