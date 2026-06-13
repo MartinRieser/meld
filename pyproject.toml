@@ -66,6 +66,10 @@ order-by-type = true
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::gi.PyGIDeprecationWarning",
+    "ignore:.*layout-style.*:Warning",
+    "ignore:.*layout-style.*:UserWarning",
+    "ignore:.*g_set_application_name.*:Warning",
+    "ignore:.*g_set_application_name.*:UserWarning",
 ]
 
 [tool.mypy]

@@ -44,7 +44,8 @@ class MeldApp(Gtk.Application):
             application_id=meld.conf.APPLICATION_ID,
             flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
         )
-        GLib.set_application_name(meld.conf.APPLICATION_NAME)
+        if not GLib.get_application_name():
+            GLib.set_application_name(meld.conf.APPLICATION_NAME)
         GLib.set_prgname(meld.conf.APPLICATION_ID)
         Gtk.Window.set_default_icon_name(meld.conf.APPLICATION_ID)
         self.set_resource_base_path(meld.conf.RESOURCE_BASE)
