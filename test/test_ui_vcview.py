@@ -1,6 +1,8 @@
 import os
 import subprocess
 
+import pytest
+
 from meld.vc import _vc
 from meld.vcview import VcView
 
@@ -76,6 +78,7 @@ def test_vcview_scan_git(tmp_path):
     assert files_found["added.txt"] == _vc.STATE_NEW
 
 
+@pytest.mark.skipif(os.name != 'nt', reason="os.path.normcase is case-sensitive on non-Windows")
 def test_case_insensitive_path_dict():
     from meld.vc._vc import CaseInsensitivePathDefaultDict, CaseInsensitivePathDict
 
@@ -126,6 +129,7 @@ def test_is_in_repo_normalization(tmp_path):
         assert location[0].isupper()
 
 
+@pytest.mark.skipif(os.name != 'nt', reason="Path casing comparison is only case-insensitive on Windows")
 def test_vcview_find_iter_by_name_casing():
     vcview = VcView()
     vcview.model.add_entries(None, ["C:\\path\\to\\file.txt"])
