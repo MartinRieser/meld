@@ -89,11 +89,6 @@ class ChunkMap(Gtk.DrawingArea):
                 f'{self.__gtype_name__} initialized without an adjustment')
             return Gtk.DrawingArea.do_realize(self)
 
-        self.set_events(
-            Gdk.EventMask.POINTER_MOTION_MASK |
-            Gdk.EventMask.BUTTON_PRESS_MASK |
-            Gdk.EventMask.BUTTON_RELEASE_MASK
-        )
 
         self.adjustment.connect('changed', lambda w: self.queue_draw())
         self.adjustment.connect('value-changed', lambda w: self.queue_draw())

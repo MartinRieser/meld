@@ -2417,7 +2417,7 @@ class FileDiff(Gtk.Box, MeldDoc):
 
     def _get_focused_pane(self):
         for i in range(self.num_panes):
-            if self.textview[i].is_focus():
+            if self.textview[i].has_focus():
                 return i
         return -1
 

@@ -16,7 +16,7 @@
 import bisect
 from typing import Dict, Optional
 
-from gi.repository import Gdk, GdkPixbuf, GObject, Gtk
+from gi.repository import GdkPixbuf, GObject, Gtk
 
 from meld.conf import _
 from meld.const import ActionMode, ChunkAction
@@ -180,14 +180,6 @@ class ActionGutter(Gtk.DrawingArea):
             }
 
     def do_realize(self):
-        self.set_events(
-            Gdk.EventMask.ENTER_NOTIFY_MASK |
-            Gdk.EventMask.LEAVE_NOTIFY_MASK |
-            Gdk.EventMask.POINTER_MOTION_MASK |
-            Gdk.EventMask.BUTTON_PRESS_MASK |
-            Gdk.EventMask.BUTTON_RELEASE_MASK |
-            Gdk.EventMask.SCROLL_MASK
-        )
         self.connect('notify::action-mode', lambda *args: self.queue_draw())
 
         meld_settings = get_meld_settings()

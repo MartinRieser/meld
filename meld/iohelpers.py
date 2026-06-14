@@ -12,7 +12,7 @@ def delete_recursively(gfile: Gio.File) -> None:
     try:
         info = gfile.query_info(
             "standard::type",
-            Gio.FileQueryInfoFlags.NONE,
+            Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
             None
         )
         file_type = info.get_file_type()
@@ -66,7 +66,7 @@ def trash_or_confirm(gfile: Gio.File) -> bool:
             raise RuntimeError(str(e))
 
     file_type = gfile.query_file_type(
-        Gio.FileQueryInfoFlags.NONE, None)
+        Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, None)
 
     if file_type not in (Gio.FileType.DIRECTORY, Gio.FileType.REGULAR):
         raise RuntimeError(_("Not a file or directory"))

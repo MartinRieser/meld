@@ -373,7 +373,7 @@ class MeldSourceView(GtkSource.View, SourceViewHelperMixin):
             context.fill()
 
         # Paint current line highlight
-        if self.props.highlight_current_line_local and self.is_focus():
+        if self.props.highlight_current_line_local and self.has_focus():
             it = textbuffer.get_iter_at_mark(textbuffer.get_insert())
             ypos, line_height = self.get_line_yrange(it)
             context.rectangle(x, ypos, width, line_height)

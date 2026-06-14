@@ -735,7 +735,6 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             ],
         )
 
-        self.ensure_style()
 
         self.custom_labels = []
         self.set_num_panes(num_panes)
@@ -968,7 +967,7 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
 
     def _get_focused_pane(self):
         for i, treeview in enumerate(self.treeview):
-            if treeview.is_focus():
+            if treeview.has_focus():
                 return i
         return None
 
@@ -1499,7 +1498,7 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         self.row_expansions = set()
 
     def on_treeview_selection_changed(self, selection, pane):
-        if not self.treeview[pane].is_focus():
+        if not self.treeview[pane].has_focus():
             return
         self.update_action_sensitivity()
 

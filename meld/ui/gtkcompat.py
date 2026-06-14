@@ -21,6 +21,7 @@ Key adaptations:
 """
 
 import logging
+import os
 
 import gi
 
@@ -243,9 +244,7 @@ Gtk.Widget.get_toplevel = lambda self: self.get_root() or self.get_native()
 Gtk.Widget.show_all = lambda self: None
 Gtk.Widget.show = lambda self: self.set_visible(True)
 Gtk.Widget.hide = lambda self: self.set_visible(False)
-Gtk.Widget.ensure_style = lambda self: None
-Gtk.Widget.set_events = lambda self, events: None
-Gtk.Widget.get_events = lambda self: 0
+
 Gtk.Button.set_image = lambda self, image: self.set_child(image)
 Gtk.Button.get_image = lambda self: self.get_child()
 
@@ -387,21 +386,17 @@ def box_pack_end(self, child, expand=True, fill=True, padding=0):
             child.set_hexpand(True)
         else:
             child.set_vexpand(True)
-    self.prepend(child)
+    if self.get_orientation() == Gtk.Orientation.HORIZONTAL:
+        child.set_halign(Gtk.Align.END)
+    else:
+        child.set_valign(Gtk.Align.END)
+    self.append(child)
 
 
 Gtk.Box.pack_start = box_pack_start
 Gtk.Box.pack_end = box_pack_end
 
 
-# StyleContext get_background_color fallback
-def stylecontext_get_background_color(self, state):
-    rgba = Gdk.RGBA()
-    rgba.parse("rgba(240,240,240,1.0)")
-    return rgba
-
-
-Gtk.StyleContext.get_background_color = stylecontext_get_background_color
 
 # Screen/display mapping for Stylesheets
 if not hasattr(Gdk, "Screen"):
@@ -739,78 +734,6 @@ Gtk.Widget.connect = compat_widget_connect
 
 
 # GObjectMeta class creation interceptor
-def get_compat_margin(self):
-    return self.get_margin_start()
-
-
-def set_compat_margin(self, value):
-    self.set_margin_start(value)
-    self.set_margin_end(value)
-    self.set_margin_top(value)
-    self.set_margin_bottom(value)
-
-
-compat_margin_prop = GObject.Property(
-    type=int, getter=get_compat_margin, setter=set_compat_margin
-)
-
-
-def get_compat_spacing(self):
-    return getattr(self, "_compat_spacing", 0)
-
-
-def set_compat_spacing(self, value):
-    self._compat_spacing = value
-
-
-compat_spacing_prop = GObject.Property(
-    type=int, getter=get_compat_spacing, setter=set_compat_spacing, default=0
-)
-
-
-class CallableBool(int):
-    def __new__(cls, val):
-        return super().__new__(cls, 1 if val else 0)
-
-    def __call__(self):
-        return bool(self)
-
-    def __repr__(self):
-        return "True" if self else "False"
-
-    def __str__(self):
-        return "True" if self else "False"
-
-
-def get_compat_is_focus(self):
-    return CallableBool(self.has_focus())
-
-
-def set_compat_is_focus(self, value):
-    if value:
-        self.grab_focus()
-
-
-compat_is_focus_prop = GObject.Property(
-    type=bool, getter=get_compat_is_focus, setter=set_compat_is_focus, default=False
-)
-
-
-def get_compat_shadow_type(self):
-    return getattr(self, "_compat_shadow_type", "none")
-
-
-def set_compat_shadow_type(self, value):
-    self._compat_shadow_type = value
-
-
-compat_shadow_type_prop = GObject.Property(
-    type=str,
-    getter=get_compat_shadow_type,
-    setter=set_compat_shadow_type,
-    default="none",
-)
-
 import gi.types  # noqa: E402
 
 original_new = gi.types.GObjectMeta.__new__
@@ -827,18 +750,6 @@ def custom_new(cls, name, bases, dct):
             break
 
     if is_widget:
-        if "margin" not in dct:
-            dct["margin"] = compat_margin_prop
-        if "spacing" not in dct:
-            dct["spacing"] = compat_spacing_prop
-        if "is_focus" not in dct:
-            dct["is_focus"] = compat_is_focus_prop
-        if "is-focus" not in dct:
-            dct["is-focus"] = compat_is_focus_prop
-        if "shadow_type" not in dct:
-            dct["shadow_type"] = compat_shadow_type_prop
-        if "shadow-type" not in dct:
-            dct["shadow-type"] = compat_shadow_type_prop
         signals_to_register = {
             "draw": (GObject.SignalFlags.RUN_LAST, GObject.TYPE_BOOLEAN, (object,)),
             "button-press-event": (
@@ -1752,7 +1663,7 @@ Gtk.Dialog.run = dialog_run
 
 
 # Initialize detailed UI activity logging
-from meld.ui.debug import install_ui_debug_hooks  # noqa: E402
-
-install_ui_debug_hooks()
+if os.environ.get("MELD_UI_DEBUG") == "1":
+    from meld.ui.debug import install_ui_debug_hooks  # noqa: E402
+    install_ui_debug_hooks()
 

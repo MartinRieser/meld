@@ -290,7 +290,7 @@ class ImageDiff(Gtk.Box, MeldDoc):
 
     def _get_focused_pane(self):
         for i in range(self.num_panes):
-            if self.image_event_box[i].is_focus():
+            if self.image_event_box[i].has_focus():
                 return i
         return -1
 
