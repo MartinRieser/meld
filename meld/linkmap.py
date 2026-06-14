@@ -18,7 +18,7 @@
 import math
 
 import cairo
-from gi.repository import Gdk, Gtk
+from gi.repository import Gtk
 
 from meld.settings import get_meld_settings
 from meld.style import get_common_theme

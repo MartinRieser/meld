@@ -1,13 +1,9 @@
-import pytest
-from gi.repository import Gio, Gtk
+from gi.repository import Gtk
 
 from meld.dirdiff import DirDiff
 from meld.filediff import FileDiff
-from meld.meldapp import MeldApp
 from meld.meldwindow import MeldWindow
-from meld.newdifftab import NewDiffTab, DiffType
-
-
+from meld.newdifftab import DiffType, NewDiffTab
 
 
 def test_gui_walkthrough(meld_app):
@@ -97,7 +93,6 @@ def test_gui_walkthrough(meld_app):
 
 
 def test_infobar_compatibility():
-    from gi.repository import Gtk
     
     infobar = Gtk.InfoBar()
     

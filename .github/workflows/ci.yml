@@ -92,6 +92,7 @@ jobs:
             --ignore=test/test_ui_dirdiff.py \
             --ignore=test/test_ui_filediff.py \
             --ignore=test/test_ui_vcview.py \
+            --ignore=test/test_ui_walkthrough.py \
             -k "not format_home_relative_path and not format_parent_relative_path"
       - name: Run tests (Ubuntu)
         if: runner.os == 'Linux'

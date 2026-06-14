@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 # Copyright (C) 2002-2006 Stephen Kennedy <stevek@gnome.org>
 # Copyright (C) 2009-2019 Kai Willadsen <kai.willadsen@gmail.com>
 #

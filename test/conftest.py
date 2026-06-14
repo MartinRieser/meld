@@ -1,5 +1,7 @@
+# ruff: noqa: E402
 import os
 import sys
+
 import pytest
 
 # Dynamic loading hack for meld.conf when running uninstalled (from git checkout)
@@ -47,6 +49,7 @@ if not os.path.exists(resource_file):
         print(f"Warning: glib-compile-resources failed: {e}", file=sys.stderr)
 
 from gi.repository import Gio
+
 if os.path.exists(resource_file):
     try:
         resources = Gio.resource_load(resource_file)
@@ -74,12 +77,31 @@ if 'meld.conf' in sys.modules:
 
 # Initialize GSettings settings
 import meld.settings
+
+if 'meld.conf' in sys.modules:
+    schema_file = os.path.join(meld.conf.DATADIR, "gschemas.compiled")
+    if not os.path.exists(schema_file):
+        import subprocess
+        try:
+            subprocess.call(
+                [
+                    "glib-compile-schemas",
+                    str(meld.conf.DATADIR),
+                ],
+                cwd=melddir
+            )
+        except FileNotFoundError:
+            print("Warning: glib-compile-schemas command not found; skipping compilation.", file=sys.stderr)
+        except Exception as e:
+            print(f"Warning: glib-compile-schemas failed: {e}", file=sys.stderr)
+
 try:
     meld.settings.create_settings()
 except Exception as e:
     print(f"Warning: failed to create settings: {e}", file=sys.stderr)
 
 from meld.meldapp import MeldApp
+
 
 @pytest.fixture(scope="session")
 def meld_app():

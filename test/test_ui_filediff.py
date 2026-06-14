@@ -201,7 +201,9 @@ def test_filediff_exit_code_with_output_saved_but_modified():
 
 def test_filediff_auto_merge_conflict_free(tmp_path):
     import time
+
     from gi.repository import GLib
+
     from meld.const import FileComparisonMode
     from meld.meldbuffer import MeldBufferState
     
