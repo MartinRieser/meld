@@ -800,7 +800,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
                 _("This will remove all selected files and folders, and all "
                   "files within any selected folders, from version control."))
 
-            dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+            dialog.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
             dialog.add_button(_("_Remove"), Gtk.ResponseType.OK)
             response = dialog.run()
             dialog.destroy()
