@@ -1,4 +1,5 @@
 
+import logging
 import pathlib
 from typing import Optional, Sequence
 
@@ -7,8 +8,24 @@ from gi.repository import Gio, GLib, Gtk
 from meld.conf import _
 from meld.misc import get_modal_parent, modal_dialog
 
+log = logging.getLogger(__name__)
 
-def delete_recursively(gfile: Gio.File) -> None:
+
+def delete_recursively(gfile: Gio.File, visited: Optional[set] = None, depth: int = 0) -> None:
+    if visited is None:
+        visited = set()
+
+    path = gfile.get_path()
+    if path:
+        if path in visited:
+            log.warning("Circular symlink loop or duplicate path detected in deletion: %s", path)
+            return
+        visited.add(path)
+
+    if depth > 20:
+        log.warning("Directory recursion limit exceeded in delete: %s", path or gfile.get_uri())
+        return
+
     try:
         info = gfile.query_info(
             "standard::type",
@@ -34,7 +51,7 @@ def delete_recursively(gfile: Gio.File) -> None:
         for child_info in enumerator:
             name = child_info.get_name()
             child = gfile.get_child(name)
-            delete_recursively(child)
+            delete_recursively(child, visited, depth + 1)
         enumerator.close(None)
     gfile.delete(None)
 

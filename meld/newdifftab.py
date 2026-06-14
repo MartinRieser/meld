@@ -20,6 +20,7 @@ from gi.repository import Gio, GLib, GObject, Gtk
 from meld.conf import _
 from meld.melddoc import LabeledObjectMixin, MeldDoc
 from meld.recent import recent_comparisons
+from meld.ui.filebutton import MeldFileButton  # noqa: F401
 from meld.ui.util import map_widgets_into_lists
 
 
@@ -112,6 +113,21 @@ class NewDiffTab(Gtk.Box, LabeledObjectMixin):
             self.file_chooser2.set_sensitive(button.get_active())
         else:  # button is self.dir_three_way_checkbutton
             self.dir_chooser2.set_sensitive(button.get_active())
+
+    @Gtk.Template.Callback()
+    def on_file_selected(self, filebutton, pane, gfile, *args):
+        if not gfile:
+            return
+
+        parent = gfile.get_parent()
+        if not parent:
+            return
+
+        if parent.query_file_type(
+                Gio.FileQueryInfoFlags.NONE, None) == Gio.FileType.DIRECTORY:
+            for chooser in self.file_chooser:
+                if not chooser.get_file():
+                    chooser.set_current_folder_file(parent)
 
     @Gtk.Template.Callback()
     def on_file_set(self, filechooser, *args):

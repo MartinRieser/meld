@@ -3,6 +3,8 @@ from typing import Optional
 
 from gi.repository import Gio, GObject, Gtk
 
+from meld.conf import _
+
 log = logging.getLogger(__name__)
 
 
@@ -48,6 +50,24 @@ class MeldFileButton(Gtk.Button):
         Gtk.FileChooserAction.SELECT_FOLDER: "folder-open-symbolic",
     }
 
+    def get_file(self) -> Optional[Gio.File]:
+        return self.file
+
+    def set_file(self, gfile: Optional[Gio.File]) -> None:
+        self.file = gfile
+        if gfile:
+            self.set_label(gfile.get_basename())
+        else:
+            self.set_label(_("(None)"))
+
+    def set_current_folder(self, path: str) -> None:
+        # FileDialog handles initial folder via initial_file or doesn't support setting folder directly without a file.
+        # We can store this as an attribute or use it if needed, or simply pass.
+        pass
+
+    def set_current_folder_file(self, parent: Gio.File) -> None:
+        pass
+
     def do_realize(self) -> None:
         Gtk.Button.do_realize(self)
 
@@ -55,6 +75,10 @@ class MeldFileButton(Gtk.Button):
             self.icon_action_map[self.action], Gtk.IconSize.BUTTON
         )
         self.set_image(image)
+        if self.file:
+            self.set_label(self.file.get_basename())
+        else:
+            self.set_label(_("(None)"))
 
     def do_clicked(self) -> None:
         dialog = Gtk.FileDialog.new()
@@ -72,7 +96,7 @@ class MeldFileButton(Gtk.Button):
                 else:
                     gfile = obj.open_finish(result)
                 if gfile:
-                    self.file = gfile
+                    self.set_file(gfile)
                     self.emit("file-selected", self.pane, self.file)
             except Exception as e:
                 log.error("File dialog failed: %s", e)
@@ -82,3 +106,4 @@ class MeldFileButton(Gtk.Button):
             dialog.select_folder(parent_win, None, on_dialog_done)
         else:
             dialog.open(parent_win, None, on_dialog_done)
+

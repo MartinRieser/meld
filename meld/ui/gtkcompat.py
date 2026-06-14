@@ -91,8 +91,8 @@ def compat_load_icon(self, icon_name, size, flags):
                 path = gfile.get_path()
                 if path:
                     return GdkPixbuf.Pixbuf.new_from_file_at_size(path, size, size)
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("Failed to load compat icon: %s", e)
     return GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, True, 8, size, size)
 
 
@@ -344,9 +344,12 @@ Gtk.Widget.override_font = widget_override_font
 Gtk.Widget.modify_font = widget_override_font
 
 
-# Widget.remove mapping
 def widget_remove(self, child):
-    if hasattr(self, "set_child") and self.get_child() == child:
+    if isinstance(self, Gtk.Notebook):
+        page_num = self.page_num(child)
+        if page_num != -1:
+            self.remove_page(page_num)
+    elif hasattr(self, "set_child") and self.get_child() == child:
         self.set_child(None)
     elif child.get_parent() == self:
         child.unparent()
@@ -523,8 +526,8 @@ def attach_compat_controllers(widget):
             event = gesture.get_last_event(gesture.get_current_sequence())
             if event:
                 state = event.get_modifier_state()
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("Failed to get last modifier state on press: %s", e)
         ev = MockEvent(
             button=button,
             x=x,
@@ -544,8 +547,8 @@ def attach_compat_controllers(widget):
             event = gesture.get_last_event(gesture.get_current_sequence())
             if event:
                 state = event.get_modifier_state()
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("Failed to get last modifier state on release: %s", e)
         ev = MockEvent(
             button=button,
             x=x,
@@ -572,8 +575,8 @@ def attach_compat_controllers(widget):
             event = ctrl.get_last_event()
             if event:
                 state = event.get_modifier_state()
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("Failed to get last modifier state on motion: %s", e)
         ev = MockEvent(
             x=x,
             y=y,
@@ -663,11 +666,11 @@ class MockDestDefaults:
 Gtk.DestDefaults = MockDestDefaults
 
 
-# Drag dest set emulation
 def widget_drag_dest_set(self, flags, targets, actions):
     try:
         target = Gtk.DropTarget.new(Gdk.FileList, actions)
-    except Exception:
+    except Exception as e:
+        log.debug("Gdk.FileList DropTarget creation failed, falling back to GObject.TYPE_STRING: %s", e)
         target = Gtk.DropTarget.new(GObject.TYPE_STRING, actions)
 
     def on_drop(drop_target, value, x, y):
@@ -698,16 +701,7 @@ Gtk.Widget.drag_dest_add_uri_targets = lambda self: None
 Gtk.Widget.drag_dest_add_image_targets = lambda self: None
 Gtk.Widget.drag_dest_add_text_targets = lambda self: None
 
-# Patch Gtk.Widget init and connect
-original_widget_init = Gtk.Widget.__init__
-
-
-def compat_widget_init(self, *args, **kwargs):
-    original_widget_init(self, *args, **kwargs)
-    attach_compat_controllers(self)
-
-
-Gtk.Widget.__init__ = compat_widget_init
+# Patch Gtk.Widget connect
 
 original_widget_connect = Gtk.Widget.connect
 
@@ -1120,7 +1114,8 @@ class CompatClipboard:
         def on_read_done(obj, result):
             try:
                 text = obj.read_text_finish(result)
-            except Exception:
+            except Exception as e:
+                log.debug("Clipboard read text finish failed: %s", e)
                 text = None
             callback(self, text, *user_data)
 
@@ -1140,72 +1135,6 @@ def compat_get_clipboard(self, selection=None):
 
 Gtk.Widget.get_clipboard = compat_get_clipboard
 Gtk.Clipboard = CompatClipboard
-
-
-# Gtk.FileChooserButton compatibility
-class CompatFileChooserButton(Gtk.Button):
-    __gtype_name__ = "GtkFileChooserButton"
-
-    __gsignals__ = {
-        "file-set": (GObject.SignalFlags.RUN_LAST, GObject.TYPE_NONE, ()),
-    }
-
-    create_folders = GObject.Property(type=bool, default=True)
-    local_only = GObject.Property(type=bool, default=True)
-    action = GObject.Property(
-        type=Gtk.FileChooserAction, default=Gtk.FileChooserAction.OPEN
-    )
-    title = GObject.Property(type=str, default="")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._file = None
-        self.connect("clicked", self.on_clicked)
-        # Default label
-        self.set_label("(None)")
-
-    def get_file(self):
-        return self._file
-
-    def set_file(self, gfile):
-        self._file = gfile
-        if gfile:
-            self.set_label(gfile.get_basename())
-        else:
-            self.set_label("(None)")
-
-    def set_current_folder(self, path):
-        pass
-
-    def set_current_folder_file(self, parent):
-        pass
-
-    def on_clicked(self, button):
-        dialog = Gtk.FileDialog.new()
-        dialog.set_title(self.title or "Select File")
-
-        is_folder = self.action == Gtk.FileChooserAction.SELECT_FOLDER
-
-        def on_dialog_done(obj, result):
-            try:
-                if is_folder:
-                    gfile = obj.select_folder_finish(result)
-                else:
-                    gfile = obj.open_finish(result)
-                if gfile:
-                    self.set_file(gfile)
-                    self.emit("file-set")
-            except Exception as e:
-                log.error("File dialog failed: %s", e)
-
-        parent_win = self.get_native()
-        if is_folder:
-            dialog.select_folder(parent_win, None, on_dialog_done)
-        else:
-            dialog.open(parent_win, None, on_dialog_done)
-
-
-Gtk.FileChooserButton = CompatFileChooserButton
 
 
 # Gtk.RecentChooserWidget compatibility
@@ -1262,7 +1191,8 @@ class CompatRecentChooserWidget(Gtk.Box):
                 if hasattr(mod, "to_unix"):
                     return mod.to_unix()
                 return mod
-            except Exception:
+            except Exception as e:
+                log.debug("Failed to get modified time for recent item: %s", e)
                 return 0
 
         raw_items.sort(key=get_mod_time, reverse=True)
