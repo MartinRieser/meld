@@ -27,7 +27,7 @@ the Future completes, returning the result back into the generator.
 """
 
 import traceback
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 
 class SchedulerBase:
@@ -143,7 +143,8 @@ class SchedulerBase:
             r = self.iteration()
             if r:
                 return r
-        return self.tasks_pending()
+            return len(self.tasks) != 0
+        return False
 
     def complete_tasks(self) -> None:
         """Run all of the scheduler's current tasks to completion.

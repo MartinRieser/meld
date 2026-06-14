@@ -150,7 +150,12 @@ class MeldDoc(LabeledObjectMixin, GObject.GObject):
         window.previous_conflict_button.set_visible(show_conflict_actions)
 
         if hasattr(self, "focus_pane") and self.focus_pane:
-            self.scheduler.add_task(self.focus_pane.grab_focus)
+            # Gtk.Widget.grab_focus() returns True under GTK4 if focus was grabbed.
+            # We must wrap it to return a falsy value so the scheduler removes it
+            # after one execution.
+            def grab_focus():
+                self.focus_pane.grab_focus()
+            self.scheduler.add_task(grab_focus)
 
     def on_container_switch_out_event(self, window):
         """Called when the container app switches away from this tab"""

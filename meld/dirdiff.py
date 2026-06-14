@@ -23,12 +23,13 @@ import os
 import shutil
 import stat
 import sys
+import threading
 import unicodedata
 from collections import namedtuple
+from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 from mmap import ACCESS_COPY, mmap
 from typing import DefaultDict, Dict, List, NamedTuple, Optional, Tuple
-from concurrent.futures import ThreadPoolExecutor
 
 from gi.repository import Gdk, Gio, GLib, GObject, Gtk
 
@@ -161,6 +162,7 @@ CacheResult = namedtuple('CacheResult', 'stats result')
 
 
 _cache = {}
+_cache_lock = threading.Lock()
 Same, SameFiltered, DodgySame, DodgyDifferent, Different, FileError = (
     list(range(6)))
 # TODO: Get the block size from os.stat
@@ -279,7 +281,8 @@ def _files_same(files, regexes, comparison_args):
 
     # Check the cache before doing the expensive comparison
     cache_key = (files, need_contents, regexes, ignore_blank_lines)
-    cache = _cache.get(cache_key)
+    with _cache_lock:
+        cache = _cache.get(cache_key)
     if cache and cache.stats == stats:
         return cache.result
 
@@ -318,8 +321,46 @@ def _files_same(files, regexes, comparison_args):
     if result is None:
         result = Same
 
-    _cache[cache_key] = CacheResult(stats, result)
+    with _cache_lock:
+        _cache[cache_key] = CacheResult(stats, result)
     return result
+
+
+def filter_on_state_background(roots, fileslist, regexes, file_compare, state_filters):
+    ret = []
+    for files in fileslist:
+        curfiles = [os.path.join(r, f) for r, f in zip(roots, files)]
+        is_present = [os.path.exists(f) for f in curfiles]
+        if all(is_present):
+            comparison_result = file_compare(curfiles, regexes)
+            if comparison_result in (Same, DodgySame):
+                states = {tree.STATE_NORMAL}
+            elif comparison_result == SameFiltered:
+                states = {tree.STATE_NOCHANGE}
+            else:
+                states = {tree.STATE_MODIFIED}
+        elif is_present.count(True) > 1:
+            # In a three-way comparison, we can have files in e.g., pane
+            # 1 and 2 be different to each other, and there be no file in
+            # pane 3. This row should be considered both modified (1 -> 2)
+            # and new (2 -> 3).
+            curfiles = [
+                f for f, exists in zip(curfiles, is_present) if exists
+            ]
+            comparison_result = file_compare(curfiles, regexes)
+            if comparison_result in (Same, DodgySame, SameFiltered):
+                states = {tree.STATE_NEW}
+            else:
+                states = {tree.STATE_NEW, tree.STATE_MODIFIED}
+        else:
+            states = {tree.STATE_NEW}
+        # Always retain NORMAL folders for comparison; we remove these
+        # later if they have no children.
+        all_folders = all(os.path.isdir(f) for f in curfiles)
+        states_match_filters = bool(states & state_filters)
+        if states_match_filters or all_folders:
+            ret.append(files)
+    return ret
 
 
 EMBLEM_NEW = "emblem-new"
@@ -1152,8 +1193,25 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             for pane, f in dirs.whitespace + files.whitespace:
                 whitespace_filenames.append((pane, roots[pane], f))
 
-            alldirs = self._filter_on_state(roots, dirs.get())
-            allfiles = self._filter_on_state(roots, files.get())
+            regexes = [f.byte_filter for f in self.text_filters if f.active]
+            fut_dirs = scan_executor.submit(
+                filter_on_state_background,
+                roots,
+                dirs.get(),
+                regexes,
+                self.file_compare,
+                set(self.state_filters)
+            )
+            fut_files = scan_executor.submit(
+                filter_on_state_background,
+                roots,
+                files.get(),
+                regexes,
+                self.file_compare,
+                set(self.state_filters)
+            )
+            alldirs = yield fut_dirs
+            allfiles = yield fut_files
 
             if alldirs or allfiles:
                 for names in alldirs:
@@ -1162,11 +1220,16 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
                     child = self.model.add_entries(it, entries)
                     differences |= self._update_item_state(child)
                     todo.append(self.model.get_path(child))
+                count = 0
                 for names in allfiles:
                     entries = [
                         os.path.join(r, n) for r, n in zip(roots, names)]
                     child = self.model.add_entries(it, entries)
                     differences |= self._update_item_state(child)
+                    count += 1
+                    if count % 50 == 0:
+                        yield _('[{label}] Scanning {folder}').format(
+                            label=self.label_text, folder=roots[0][prefixlen:])
             else:
                 # Our subtree is empty, or has been filtered to be empty
                 if (tree.STATE_NORMAL in self.state_filters or
