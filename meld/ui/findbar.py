@@ -72,6 +72,14 @@ class FindBar(Gtk.Grid):
             'replace_mode', self, 'row-spacing', GObject.BindingFlags.DEFAULT,
             lambda binding, replace_mode: 6 if replace_mode else 0)
 
+        # Setup shortcut controller for <Shift>Return
+        controller = Gtk.ShortcutController.new()
+        trigger = Gtk.ShortcutTrigger.parse_string("<Shift>Return")
+        action = Gtk.CallbackAction.new(lambda w, *args: (w.activate_secondary(), True)[1])
+        shortcut = Gtk.Shortcut.new(trigger, action)
+        controller.add_shortcut(shortcut)
+        self.add_controller(controller)
+
     def hide(self):
         self.set_text_view(None)
         self.wrap_box.set_visible(False)

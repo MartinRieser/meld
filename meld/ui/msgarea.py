@@ -35,7 +35,8 @@ def layout_text_and_icon(
 
     if icon_name:
         image = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.DIALOG)
-        image.set_alignment(0.5, 0.5)
+        image.set_valign(Gtk.Align.CENTER)
+        image.set_halign(Gtk.Align.CENTER)
         hbox_content.pack_start(image, False, False, 0)
 
     vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -53,7 +54,7 @@ def layout_text_and_icon(
 
     if secondary_text:
         secondary_label = Gtk.Label(
-            "<small>{}</small>".format(secondary_text),
+            label="<small>{}</small>".format(secondary_text),
             wrap=True,
             wrap_mode=Pango.WrapMode.WORD,
             use_markup=True,

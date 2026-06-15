@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from gi.repository import Gdk, Gio, GObject
+from gi.repository import Gio, GObject
 
 from meld.settings import load_settings_schema
 

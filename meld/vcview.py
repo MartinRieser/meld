@@ -30,7 +30,7 @@ from meld import tree
 from meld.conf import _
 from meld.externalhelpers import open_files_external
 from meld.iohelpers import trash_or_confirm
-from meld.melddoc import MeldDoc
+from meld.melddoc import MeldDoc, setup_chunk_movement_shortcuts
 from meld.misc import error_dialog, read_pipe_iter
 from meld.recent import RecentType
 from meld.settings import bind_settings, settings
@@ -192,6 +192,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         # parent to make Template work.
         MeldDoc.__init__(self)
         bind_settings(self)
+        setup_chunk_movement_shortcuts(self)
 
 
         binding_set_names = ("GtkScrolledWindow", "GtkTreeView")

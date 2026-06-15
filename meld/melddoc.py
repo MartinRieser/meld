@@ -171,3 +171,23 @@ class MeldDoc(LabeledObjectMixin, GObject.GObject):
         Gtk.ResponseType.CANCEL to request that the container not delete it.
         """
         return Gtk.ResponseType.OK
+
+
+def setup_chunk_movement_shortcuts(widget: Gtk.Widget) -> None:
+    controller = Gtk.ShortcutController.new()
+    up_triggers = ["<Alt>Up", "<Alt>KP_Up", "<Primary>E"]
+    down_triggers = ["<Alt>Down", "<Alt>KP_Down", "<Primary>D"]
+
+    action_up = Gtk.CallbackAction.new(lambda w, *args: (w.next_diff(0), True)[1])
+    for trigger_str in up_triggers:
+        trigger = Gtk.ShortcutTrigger.parse_string(trigger_str)
+        shortcut = Gtk.Shortcut.new(trigger, action_up)
+        controller.add_shortcut(shortcut)
+
+    action_down = Gtk.CallbackAction.new(lambda w, *args: (w.next_diff(1), True)[1])
+    for trigger_str in down_triggers:
+        trigger = Gtk.ShortcutTrigger.parse_string(trigger_str)
+        shortcut = Gtk.Shortcut.new(trigger, action_down)
+        controller.add_shortcut(shortcut)
+
+    widget.add_controller(controller)

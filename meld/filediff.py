@@ -55,7 +55,7 @@ from meld.meldbuffer import (
     BufferLines,
     MeldBufferState,
 )
-from meld.melddoc import ComparisonState, MeldDoc
+from meld.melddoc import ComparisonState, MeldDoc, setup_chunk_movement_shortcuts
 from meld.menuhelpers import replace_menu_section
 from meld.misc import user_critical, with_focused_pane
 from meld.patchdialog import PatchDialog
@@ -255,6 +255,7 @@ class FileDiff(Gtk.Box, MeldDoc):
         # parent to make Template work.
         MeldDoc.__init__(self)
         bind_settings(self)
+        setup_chunk_movement_shortcuts(self)
 
         widget_lists = [
             "sourcemap", "file_save_button", "file_toolbar",

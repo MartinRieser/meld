@@ -112,7 +112,7 @@ from meld.conf import _
 from meld.const import FILE_FILTER_ACTION_FORMAT, MISSING_TIMESTAMP
 from meld.externalhelpers import open_files_external
 from meld.iohelpers import find_shared_parent_path, trash_or_confirm
-from meld.melddoc import MeldDoc
+from meld.melddoc import MeldDoc, setup_chunk_movement_shortcuts
 from meld.misc import all_same, apply_text_filters, with_focused_pane
 from meld.recent import RecentType
 from meld.settings import bind_settings, get_meld_settings, settings
@@ -616,6 +616,7 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         # parent to make Template work.
         MeldDoc.__init__(self)
         bind_settings(self)
+        setup_chunk_movement_shortcuts(self)
 
 
         binding_set_names = ("GtkScrolledWindow", "GtkTreeView")

@@ -412,3 +412,26 @@ def test_actiongutter_click_cancelled_on_drag():
     assert len(activated) == 0
     assert gutter.pressed_chunk is None
 
+
+def test_msgarea_secondary_text():
+    from meld.ui.msgarea import MsgAreaController
+    mgr = MsgAreaController()
+    # Should not raise TypeError when secondary text is provided
+    msgarea = mgr.new_from_text_and_icon("Primary Message", "Secondary Detail message", "dialog-info")
+    assert msgarea is not None
+
+
+def test_findbar_shortcuts():
+    from gi.repository import Gtk
+
+    from meld.filediff import FileDiff
+    from meld.ui.findbar import FindBar
+
+    filediff = FileDiff(2)
+    findbar = FindBar(filediff)
+
+    model = findbar.observe_controllers()
+    controllers = [model.get_item(i) for i in range(model.get_n_items())]
+    shortcut_controllers = [c for c in controllers if isinstance(c, Gtk.ShortcutController)]
+
+    assert len(shortcut_controllers) > 0
