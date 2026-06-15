@@ -330,6 +330,7 @@ def test_scheduler_unhashable_task():
     assert task.called
 
 
+
 def test_filediff_actions_no_chunk():
     filediff = FileDiff(3)
     # Ensure chunk is None
@@ -344,3 +345,70 @@ def test_filediff_actions_no_chunk():
     filediff.action_copy_change_right_up()
     filediff.action_copy_change_left_down()
     filediff.action_copy_change_right_down()
+
+
+def test_actiongutter_pressed_records_chunk():
+    filediff = FileDiff(2)
+    gutter = filediff.actiongutter[0]
+
+    # Fake a chunk in buttons list (x1, y1, x2, y2, chunk)
+    fake_chunk = ('replace', 1, 3, 1, 3)
+    gutter.buttons = [(0, 0, 40, 20, fake_chunk)]
+
+    # Press inside the button region
+    gutter.update_pointer_chunk(10, 10)
+    assert gutter.pointer_chunk == fake_chunk
+
+    gutter._on_button_pressed(None, 1, 10, 10)
+    assert gutter.pressed_chunk == fake_chunk
+
+
+def test_actiongutter_click_activates_chunk():
+    filediff = FileDiff(2)
+    gutter = filediff.actiongutter[0]
+
+    fake_chunk = ('replace', 1, 3, 1, 3)
+    gutter.buttons = [(0, 0, 40, 20, fake_chunk)]
+
+    activated = []
+    def on_chunk_action_activated(obj, action, from_view, to_view, chunk):
+        activated.append((action, chunk))
+    gutter.connect('chunk-action-activated', on_chunk_action_activated)
+
+    # Press and release inside the button
+    gutter.update_pointer_chunk(10, 10)
+    gutter._on_button_pressed(None, 1, 10, 10)
+    gutter._on_button_released(None, 1, 10, 10)
+
+    assert len(activated) == 1
+    assert activated[0][1] == fake_chunk
+    assert gutter.pressed_chunk is None
+
+
+def test_actiongutter_click_cancelled_on_drag():
+    filediff = FileDiff(2)
+    gutter = filediff.actiongutter[0]
+
+    fake_chunk = ('replace', 1, 3, 1, 3)
+    gutter.buttons = [(0, 0, 40, 20, fake_chunk)]
+
+    activated = []
+    def on_chunk_action_activated(obj, action, from_view, to_view, chunk):
+        activated.append((action, chunk))
+    gutter.connect('chunk-action-activated', on_chunk_action_activated)
+
+    # Press inside the button
+    gutter.update_pointer_chunk(10, 10)
+    gutter._on_button_pressed(None, 1, 10, 10)
+
+    # Move pointer outside the button (update_pointer_chunk sets pointer_chunk to None)
+    gutter.update_pointer_chunk(50, 50)
+    assert gutter.pointer_chunk is None
+
+    # Release pointer outside the button
+    gutter._on_button_released(None, 1, 50, 50)
+
+    # Action should NOT be activated, and pressed_chunk should be cleared
+    assert len(activated) == 0
+    assert gutter.pressed_chunk is None
+
