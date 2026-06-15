@@ -149,6 +149,12 @@ class FileDiff(Gtk.Box, MeldDoc):
     )
     show_overview_map = GObject.Property(type=bool, default=True)
     overview_map_style = GObject.Property(type=str, default='chunkmap')
+    show_git_blame = GObject.Property(
+        type=bool,
+        nick="Show Git blame",
+        blurb="Whether to show Git blame inline annotations",
+        default=False,
+    )
 
     actiongutter0 = Gtk.Template.Child()
     actiongutter1 = Gtk.Template.Child()
@@ -320,6 +326,8 @@ class FileDiff(Gtk.Box, MeldDoc):
         for prop in sourceview_prop_actions:
             action = make_multiobject_property_action(self.textview, prop)
             prop_action_group.add_action(action)
+        blame_action = Gio.PropertyAction.new('show-git-blame', self, 'show-git-blame')
+        prop_action_group.add_action(blame_action)
         self.insert_action_group('view-local', prop_action_group)
 
         # Set up per-view action group for top-level menu insertion
@@ -524,6 +532,7 @@ class FileDiff(Gtk.Box, MeldDoc):
             t.line_renderer = renderer
 
         self.connect("notify::ignore-blank-lines", self.refresh_comparison)
+        self.connect("notify::show-git-blame", self.on_show_git_blame_changed)
 
     def do_realize(self):
         Gtk.Box().do_realize(self)
@@ -1943,6 +1952,10 @@ class FileDiff(Gtk.Box, MeldDoc):
                 self.textview[self.cursor.pane], None
             )
 
+        if self.props.show_git_blame:
+            for pane in range(self.num_panes):
+                self.refresh_git_blame(pane)
+
         langs = [LanguageManager.get_language_from_file(buf.data.gfile)
                  for buf in self.textbuffer[:self.num_panes]]
 
@@ -1989,6 +2002,65 @@ class FileDiff(Gtk.Box, MeldDoc):
         self.msgarea_mgr[pane].add_action_msg(
             'dialog-warning-symbolic', primary, secondary, _("_Reload"),
             self.revert_pane, pane)
+
+    def on_show_git_blame_changed(self, *args):
+        show = self.props.show_git_blame
+        for pane in range(self.num_panes):
+            t = self.textview[pane]
+            renderer = getattr(t, 'blame_renderer', None)
+
+            if show:
+                if not renderer:
+                    from meld.gutterrendererblame import GutterRendererGitBlame
+                    renderer = GutterRendererGitBlame()
+                    t.blame_renderer = renderer
+
+                direction = t.get_direction()
+                window = Gtk.TextWindowType.LEFT
+                if direction == Gtk.TextDirection.RTL:
+                    window = Gtk.TextWindowType.RIGHT
+                gutter = t.get_gutter(window)
+                try:
+                    gutter.insert(renderer, -40)
+                except GLib.Error:
+                    pass
+
+                self.refresh_git_blame(pane)
+            else:
+                if renderer:
+                    direction = t.get_direction()
+                    window = Gtk.TextWindowType.LEFT
+                    if direction == Gtk.TextDirection.RTL:
+                        window = Gtk.TextWindowType.RIGHT
+                    gutter = t.get_gutter(window)
+                    try:
+                        gutter.remove(renderer)
+                    except GLib.Error:
+                        pass
+
+    def refresh_git_blame(self, pane):
+        buf = self.textbuffer[pane]
+        gfile = buf.data.gfile
+        if not gfile:
+            return
+
+        path = gfile.get_path()
+        if not path:
+            return
+
+        start_iter = buf.get_start_iter()
+        end_iter = buf.get_end_iter()
+        buffer_text = buf.get_text(start_iter, end_iter, False)
+
+        def callback(blame_data):
+            if buf.data.gfile != gfile:
+                return
+            renderer = getattr(self.textview[pane], 'blame_renderer', None)
+            if renderer:
+                renderer.set_blame_data(blame_data)
+
+        from meld.gutterrendererblame import fetch_blame_async
+        fetch_blame_async(path, buffer_text, callback)
 
     def refresh_comparison(self, *args):
         """Refresh the view by clearing and redoing all comparisons"""

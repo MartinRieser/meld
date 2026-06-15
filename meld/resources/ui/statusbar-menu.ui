@@ -7,6 +7,10 @@
       <attribute name="action">show-line-numbers</attribute>
     </item>
     <item>
+      <attribute name="label" translatable="yes">Show Git blame</attribute>
+      <attribute name="action">show-git-blame</attribute>
+    </item>
+    <item>
       <attribute name="label" translatable="yes">Show whitespace</attribute>
       <attribute name="action">draw-spaces-bool</attribute>
     </item>
