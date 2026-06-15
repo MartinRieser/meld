@@ -77,7 +77,7 @@ class NewDiffTab(Gtk.Box, LabeledObjectMixin):
             self.button_type_vc,
         ]
         self.diff_methods = {
-            DiffType.File: parentapp.append_filediff,
+            DiffType.File: parentapp.append_diff,
             DiffType.Folder: parentapp.append_dirdiff,
             DiffType.Version: parentapp.append_vcview,
         }

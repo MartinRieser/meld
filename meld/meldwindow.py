@@ -23,6 +23,11 @@ from gi.repository import Gdk, Gio, GLib, Gtk
 # Import support module to get all builder-constructed widgets in the namespace
 import meld.ui.gladesupport  # noqa: F401
 import meld.ui.util
+from meld.archivediff import (
+    cleanup_extracted_dir,
+    extract_archive,
+    files_are_archives,
+)
 from meld.conf import IS_DEVEL, _
 from meld.const import (
     FILE_FILTER_ACTION_FORMAT,
@@ -419,6 +424,13 @@ class MeldWindow(Gtk.ApplicationWindow):
         merge_output: Optional[Gio.File] = None,
         meta: Optional[Dict[str, Any]] = None,
     ):
+        # If every side is an archive, transparently extract and treat
+        # the comparison as a folder diff. Heterogeneous archives (e.g.
+        # zip vs. tar.gz) are allowed; if only one side is an archive
+        # the regular file/directory dispatch below applies.
+        if not auto_merge and files_are_archives(gfiles):
+            return self._append_archive_diff(gfiles, auto_compare)
+
         have_directories = False
         have_files = False
         for f in gfiles:
@@ -440,6 +452,36 @@ class MeldWindow(Gtk.ApplicationWindow):
             return self.append_filediff(
                 gfiles, merge_output=merge_output, meta=meta)
 
+    def _append_archive_diff(
+        self,
+        gfiles: Sequence[Gio.File],
+        auto_compare: bool = False,
+    ) -> DirDiff:
+        # Each entry is a (cleanup_root, content_dir) pair. content_dir
+        # is the path handed to DirDiff; cleanup_root is the temp tree
+        # we own and must remove when the comparison closes.
+        extracted: list[tuple[str, str]] = []
+        try:
+            for gfile in gfiles:
+                extracted.append(extract_archive(gfile))
+        except Exception:
+            for cleanup_root, _ in extracted:
+                cleanup_extracted_dir(cleanup_root)
+            raise
+
+        extracted_gfiles = [
+            Gio.File.new_for_path(content_dir)
+            for _, content_dir in extracted
+        ]
+        doc = self.append_dirdiff(extracted_gfiles, auto_compare=auto_compare)
+        doc.set_labels([gfile.get_basename() for gfile in gfiles])
+
+        def _on_close(*args):
+            for cleanup_root, _ in extracted:
+                cleanup_extracted_dir(cleanup_root)
+        doc.close_signal.connect(_on_close)
+        return doc
+
     def append_vcview(self, location, auto_compare=False):
         doc = VcView()
         self._append_page(doc)
@@ -454,7 +496,10 @@ class MeldWindow(Gtk.ApplicationWindow):
     def append_recent(self, uri):
         comparison_type, gfiles = recent_comparisons.read(uri)
         comparison_method = {
-            RecentType.File: self.append_filediff,
+            # File comparisons go through append_diff so that archive
+            # entries in the recent list are still recognised and
+            # redirected to a folder comparison.
+            RecentType.File: self.append_diff,
             RecentType.Folder: self.append_dirdiff,
             RecentType.Merge: self.append_filemerge,
             RecentType.VersionControl: self.append_vcview,

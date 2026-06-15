@@ -59,8 +59,18 @@ class MeldSettings(GObject.GObject):
     def _style_scheme_from_gsettings(self):
         from meld.style import set_base_style_scheme
         manager = GtkSource.StyleSchemeManager.get_default()
-        scheme = manager.get_scheme(settings.get_string('style-scheme'))
         prefer_dark = settings.get_boolean("prefer-dark-theme")
+        scheme_id = settings.get_string('style-scheme')
+
+        if prefer_dark and scheme_id in ('classic', 'meld-base'):
+            scheme_id = 'meld-dark'
+        elif not prefer_dark and scheme_id == 'meld-dark':
+            scheme_id = 'meld-base'
+
+        scheme = manager.get_scheme(scheme_id)
+        if not scheme:
+            scheme = manager.get_scheme('classic')
+
         set_base_style_scheme(scheme, prefer_dark)
         return scheme
 
