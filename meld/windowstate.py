@@ -37,9 +37,8 @@ class SavedWindowState(GObject.GObject):
 
     def bind(self, window):
         window.connect('size-allocate', self.on_size_allocate)
-        # FIXME: just `maximized` and `fullscreened` for GTK 4
-        window.connect("notify::is-maximized", self.on_window_state_event)
-        window.connect("notify::is-fullscreened", self.on_window_state_event)
+        window.connect("notify::maximized", self.on_window_state_event)
+        window.connect("notify::fullscreened", self.on_window_state_event)
 
         # Don't re-read from gsettings after initialisation; we've seen
         # what looked like issues with buggy debounce here.
@@ -69,9 +68,6 @@ class SavedWindowState(GObject.GObject):
         if is_maximized != self.props.is_maximized:
             self.props.is_maximized = is_maximized
 
-        # TODO: Migrate to use is_fullscreen in GTK 4
-        win = window.get_window()
-        state = win.get_state() if win else 0
-        is_fullscreen = state & Gdk.WindowState.FULLSCREEN
+        is_fullscreen = window.is_fullscreen()
         if is_fullscreen != self.props.is_fullscreen:
             self.props.is_fullscreen = is_fullscreen
