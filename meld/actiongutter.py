@@ -170,6 +170,11 @@ class ActionGutter(Gtk.DrawingArea):
         self.motion_controller.connect("leave", self.motion_event)
         self.motion_controller.connect("motion", self.motion_event)
 
+        self.click_controller = Gtk.GestureMultiPress(widget=self)
+        self.click_controller.set_propagation_phase(Gtk.PropagationPhase.TARGET)
+        self.click_controller.connect("pressed", self._on_button_pressed)
+        self.click_controller.connect("released", self._on_button_released)
+
     def on_setting_changed(self, settings, key):
         if key == 'style-scheme':
             self.fill_colors, self.line_colors = get_common_theme()
@@ -220,18 +225,15 @@ class ActionGutter(Gtk.DrawingArea):
             # This is either an enter or motion event; we treat them the same
             self.update_pointer_chunk(x, y)
 
-    def do_button_press_event(self, event):
+    def _on_button_pressed(self, gesture, n_press, x, y):
         if self.pointer_chunk:
             self.pressed_chunk = self.pointer_chunk
 
-        return Gtk.DrawingArea.do_button_press_event(self, event)
-
-    def do_button_release_event(self, event):
+    def _on_button_released(self, gesture, n_press, x, y):
+        self.update_pointer_chunk(x, y)
         if self.pointer_chunk and self.pointer_chunk == self.pressed_chunk:
             self.activate(self.pressed_chunk)
         self.pressed_chunk = None
-
-        return Gtk.DrawingArea.do_button_press_event(self, event)
 
     def _action_on_chunk(self, action: ChunkAction, chunk):
         self.chunk_action_activated.emit(
