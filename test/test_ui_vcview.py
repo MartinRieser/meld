@@ -97,7 +97,7 @@ def test_commit_dialog():
     import meld.vc.git
     vcview.vc = meld.vc.git.Vc(os.path.abspath('.'))
     vcview.location = vcview.vc.location
-    
+
     from meld.ui.vcdialogs import CommitDialog
     dialog = CommitDialog(vcview)
     assert dialog is not None
@@ -118,11 +118,11 @@ def test_is_in_repo_normalization(tmp_path):
     repo_dir = tmp_path / "repo"
     repo_dir.mkdir()
     subprocess.run(["git", "init"], cwd=str(repo_dir), check=True)
-    
+
     test_path = str(repo_dir)
     if os.name == 'nt' and test_path[0].isupper():
         test_path = test_path[0].lower() + test_path[1:]
-        
+
     root, location = Vc.is_in_repo(test_path)
     if os.name == 'nt':
         assert root[0].isupper()
@@ -163,12 +163,12 @@ def test_vcview_scan_git_subdirectory(tmp_path):
     vcview = VcView()
     # Explicitly enable status filters
     vcview.props.status_filters = ['flatten', 'modified', 'normal']
-    
+
     # Test path casing: use lowercase drive letter if on Windows
     repo_dir_str = str(repo_dir)
     if os.name == 'nt' and repo_dir_str[0].isupper():
         repo_dir_str = repo_dir_str[0].lower() + repo_dir_str[1:]
-        
+
     vcview.set_location(repo_dir_str)
 
     # Run the VC scanning scheduler to completion
@@ -240,8 +240,3 @@ def test_dialog_run_compatibility():
     response = dialog.run()
     assert response == Gtk.ResponseType.OK
     dialog.destroy()
-
-
-
-
-

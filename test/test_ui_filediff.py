@@ -12,7 +12,7 @@ def test_filediff_instantiation():
 
 def test_filediff_comparison_and_merge():
     filediff = FileDiff(2)
-    
+
     buf0 = filediff.textbuffer[0]
     buf1 = filediff.textbuffer[1]
 
@@ -29,7 +29,7 @@ def test_filediff_comparison_and_merge():
     # Get computed difference chunks between pane 0 and pane 1
     chunks = list(filediff.linediffer.pair_changes(0, 1))
     assert len(chunks) == 1
-    
+
     chunk = chunks[0]
     # The chunk type should be 'replace' since line 2 differs
     assert chunk.tag == 'replace'
@@ -48,7 +48,7 @@ def test_filediff_comparison_and_merge():
 
 def test_filediff_delete_chunk():
     filediff = FileDiff(2)
-    
+
     buf0 = filediff.textbuffer[0]
     buf1 = filediff.textbuffer[1]
 
@@ -63,7 +63,7 @@ def test_filediff_delete_chunk():
     # Get computed difference chunks
     chunks = list(filediff.linediffer.pair_changes(0, 1))
     assert len(chunks) == 1
-    
+
     chunk = chunks[0]
     # The chunk in pane 0 is 'delete' relative to pane 1
     assert chunk.tag == 'delete'
@@ -138,13 +138,13 @@ def test_filediff_save_file(tmp_path):
 
 def test_filediff_exit_code_no_output():
     filediff = FileDiff(2)
-    
+
     emitted_code = None
     def on_close(obj, exit_code):
         nonlocal emitted_code
         emitted_code = exit_code
     filediff.close_signal.connect(on_close)
-    
+
     filediff.on_delete_event()
     assert emitted_code == 0
 
@@ -152,13 +152,13 @@ def test_filediff_exit_code_no_output():
 def test_filediff_exit_code_with_output_not_saved():
     filediff = FileDiff(3)
     filediff.set_merge_output_file(Gio.File.new_for_path("dummy"))
-    
+
     emitted_code = None
     def on_close(obj, exit_code):
         nonlocal emitted_code
         emitted_code = exit_code
     filediff.close_signal.connect(on_close)
-    
+
     filediff.on_delete_event()
     assert emitted_code == 1
 
@@ -167,13 +167,13 @@ def test_filediff_exit_code_with_output_saved():
     filediff = FileDiff(3)
     filediff.set_merge_output_file(Gio.File.new_for_path("dummy"))
     filediff.merge_output_saved = True
-    
+
     emitted_code = None
     def on_close(obj, exit_code):
         nonlocal emitted_code
         emitted_code = exit_code
     filediff.close_signal.connect(on_close)
-    
+
     filediff.on_delete_event()
     assert emitted_code == 0
 
@@ -183,18 +183,18 @@ def test_filediff_exit_code_with_output_saved_but_modified():
     filediff = FileDiff(3)
     filediff.set_merge_output_file(Gio.File.new_for_path("dummy"))
     filediff.merge_output_saved = True
-    
+
     # Modify buffer
     filediff.textbuffer[1].set_text("unsaved modifications")
     # Mock check_save_modified to simulate choosing "Close without Saving" (returning OK)
     filediff.check_save_modified = lambda *args: Gtk.ResponseType.OK
-    
+
     emitted_code = None
     def on_close(obj, exit_code):
         nonlocal emitted_code
         emitted_code = exit_code
     filediff.close_signal.connect(on_close)
-    
+
     filediff.on_delete_event()
     assert emitted_code == 1
 
@@ -206,17 +206,17 @@ def test_filediff_auto_merge_conflict_free(tmp_path):
 
     from meld.const import FileComparisonMode
     from meld.meldbuffer import MeldBufferState
-    
+
     file_l = tmp_path / "left.txt"
     file_m = tmp_path / "mid.txt"
     file_r = tmp_path / "right.txt"
     out_path = tmp_path / "output.txt"
-    
+
     # Conflict-free 3-way merge
     file_l.write_text("line 1 left\nline 2\nline 3\n")
     file_m.write_text("line 1\nline 2\nline 3\n")
     file_r.write_text("line 1\nline 2\nline 3 right\n")
-    
+
     filediff = FileDiff(3, comparison_mode=FileComparisonMode.AutoMerge)
     filediff.set_files([
         Gio.File.new_for_path(str(file_l)),
@@ -224,13 +224,13 @@ def test_filediff_auto_merge_conflict_free(tmp_path):
         Gio.File.new_for_path(str(file_r)),
     ])
     filediff.set_merge_output_file(Gio.File.new_for_path(str(out_path)))
-    
+
     emitted_code = None
     def on_close(obj, exit_code):
         nonlocal emitted_code
         emitted_code = exit_code
     filediff.close_signal.connect(on_close)
-    
+
     # Wait for loading to finish
     context = GLib.MainContext.default()
     start_time = time.time()
@@ -240,10 +240,10 @@ def test_filediff_auto_merge_conflict_free(tmp_path):
         while context.pending():
             context.iteration(False)
         time.sleep(0.01)
-        
+
     # Execute the comparison and auto-merge tasks
     filediff.scheduler.complete_tasks()
-    
+
     # Wait for saving and close_signal emission
     start_time = time.time()
     while emitted_code is None:
@@ -252,22 +252,22 @@ def test_filediff_auto_merge_conflict_free(tmp_path):
         while context.pending():
             context.iteration(False)
         time.sleep(0.01)
-        
+
     assert emitted_code == 0
     assert out_path.read_text() == "line 1 left\nline 2\nline 3 right\n"
 
 
 def test_filediff_conflict_badge():
     filediff = FileDiff(3)
-    
+
     # Verify initial state of middle pane status bar conflict label
     assert filediff.statusbar[1].conflict_label.props.visible is False
-    
+
     # Update conflict count and verify badge visibility/text
     filediff.statusbar[1].set_conflict_count(5)
     assert filediff.statusbar[1].conflict_label.props.visible is True
     assert "5 conflicts" in filediff.statusbar[1].conflict_label.get_text()
-    
+
     # Reset conflict count and verify it hides
     filediff.statusbar[1].set_conflict_count(0)
     assert filediff.statusbar[1].conflict_label.props.visible is False
@@ -275,18 +275,18 @@ def test_filediff_conflict_badge():
 
 def test_filediff_conflict_menu():
     filediff = FileDiff(3)
-    
+
     # Verify that the action gutter is associated with the FileDiff instance
     gutter = filediff.actiongutter[0]
     assert gutter.filediff == filediff
-    
+
     # Mock a conflict chunk: (type, start_a, end_a, start_b, end_b)
     conflict_chunk = ('conflict', 1, 2, 1, 2)
-    
+
     # Generate conflict menu
     menu = gutter._make_conflict_menu(conflict_chunk)
     assert menu is not None
-    
+
     # Verify menu items exist and have correct labels
     box = menu.box
     items = []
@@ -294,7 +294,7 @@ def test_filediff_conflict_menu():
     while child is not None:
         items.append(child)
         child = child.get_next_sibling()
-        
+
     assert len(items) == 4
     assert "Keep Left" in items[0].props.label
     assert "Keep Right" in items[1].props.label
@@ -304,9 +304,9 @@ def test_filediff_conflict_menu():
 
 def test_scheduler_unhashable_task():
     from meld.task import FifoScheduler
-    
+
     scheduler = FifoScheduler()
-    
+
     # Define a custom unhashable class
     class UnhashableTask:
         def __init__(self):
@@ -316,13 +316,13 @@ def test_scheduler_unhashable_task():
             return False
         def __hash__(self):
             raise TypeError("unhashable type")
-            
+
     task = UnhashableTask()
-    
+
     # Should not raise TypeError during add or remove
     scheduler.add_task(task)
     scheduler.remove_task(task)
-    
+
     # Let's add it again and run it
     scheduler.add_task(task)
     assert not task.called
@@ -334,7 +334,7 @@ def test_filediff_actions_no_chunk():
     filediff = FileDiff(3)
     # Ensure chunk is None
     filediff.cursor.chunk = None
-    
+
     # The following action methods should return early without throwing ValueError
     filediff.action_push_change_left()
     filediff.action_push_change_right()
@@ -344,5 +344,3 @@ def test_filediff_actions_no_chunk():
     filediff.action_copy_change_right_up()
     filediff.action_copy_change_left_down()
     filediff.action_copy_change_right_down()
-
-

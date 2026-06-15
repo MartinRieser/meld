@@ -47,7 +47,7 @@ def test_dirdiff_scan_and_activation(tmp_path):
 
     # Retrieve all files in the model
     files_found = []
-    
+
     def traverse(model, it):
         while it:
             paths = model.value_paths(it)
@@ -65,7 +65,7 @@ def test_dirdiff_scan_and_activation(tmp_path):
         name_a = os.path.basename(p[0]) if (p[0] and os.path.exists(p[0])) else None
         name_b = os.path.basename(p[1]) if (p[1] and os.path.exists(p[1])) else None
         basenames.append((name_a, name_b))
-    
+
     assert ("file1.txt", "file1.txt") in basenames
     assert ("file2.txt", None) in basenames
     assert (None, "file3.txt") in basenames

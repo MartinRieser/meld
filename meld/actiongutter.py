@@ -259,38 +259,38 @@ class ActionGutter(Gtk.DrawingArea):
 
     def _make_conflict_menu(self, chunk):
         menu = Gtk.Menu()
-        
+
         keep_left = Gtk.MenuItem.new_with_label(_("Keep Left (Accept Left)"))
         keep_right = Gtk.MenuItem.new_with_label(_("Keep Right (Accept Right)"))
         keep_both_l = Gtk.MenuItem.new_with_label(_("Keep Both (Left then Right)"))
         keep_both_r = Gtk.MenuItem.new_with_label(_("Keep Both (Right then Left)"))
-        
+
         menu.append(keep_left)
         menu.append(keep_right)
         menu.append(keep_both_l)
         menu.append(keep_both_r)
-        
+
         menu.show_all()
-        
+
         def on_keep_left(widget):
             self.filediff.replace_chunk(0, 1, chunk)
-            
+
         def on_keep_right(widget):
             self.filediff.replace_chunk(2, 1, chunk)
-            
+
         def on_keep_both_l(widget):
             self.filediff.copy_chunk(0, 1, chunk, copy_up=False)
             self.filediff.copy_chunk(2, 1, chunk, copy_up=False)
-            
+
         def on_keep_both_r(widget):
             self.filediff.copy_chunk(2, 1, chunk, copy_up=False)
             self.filediff.copy_chunk(0, 1, chunk, copy_up=False)
-            
+
         keep_left.connect('activate', on_keep_left)
         keep_right.connect('activate', on_keep_right)
         keep_both_l.connect('activate', on_keep_both_l)
         keep_both_r.connect('activate', on_keep_both_r)
-        
+
         return menu
 
     def _make_copy_menu(self, chunk):

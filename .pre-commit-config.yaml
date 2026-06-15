@@ -40,6 +40,7 @@ repos:
     rev: v1.8.0
     hooks:
     -   id: mypy                      # Runs static type check validation
+        exclude: ^bin/meld$
 
 # Global excludes: do not scan translated .po catalogs
 exclude: ^po/.*\.po$

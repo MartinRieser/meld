@@ -1596,4 +1596,3 @@ Gtk.Dialog.run = dialog_run
 if os.environ.get("MELD_UI_DEBUG") == "1":
     from meld.ui.debug import install_ui_debug_hooks  # noqa: E402
     install_ui_debug_hooks()
-

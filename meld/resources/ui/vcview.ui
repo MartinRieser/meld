@@ -184,20 +184,20 @@
               </attributes>
             </child>
           </object>
-          
+
         </child>
         <style>
           <class name="meld-actionbar"/>
         </style>
       </object>
-      
+
     </child>
     <child>
       <object class="MsgAreaController" id="msgarea_mgr">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
       </object>
-      
+
     </child>
     <child>
       <object class="GtkPaned" id="vc_console_vpaned">
@@ -262,7 +262,7 @@
               </object>
             </child>
           </object>
-          
+
         </child>
         <child type="end">
           <object class="GtkBox" id="console_vbox">
@@ -281,7 +281,7 @@
                   <attribute name="weight" value="bold"/>
                 </attributes>
               </object>
-              
+
             </child>
             <child>
               <object class="GtkScrolledWindow" id="console_scrolledwindow">
@@ -298,13 +298,13 @@
                   </object>
                 </child>
               </object>
-              
+
             </child>
           </object>
-          
+
         </child>
       </object>
-      
+
     </child>
   </template>
   <object class="GtkListStore" id="liststore_vcs">

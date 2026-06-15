@@ -72,7 +72,7 @@ def test_gui_walkthrough(meld_app):
     # Switch to folder tab
     new_tab2.button_type_dir.set_active(True)
     new_tab2.on_button_type_toggled(new_tab2.button_type_dir)
-    
+
     # Open new blank folder comparison (replaces new_tab2)
     new_tab2.on_button_new_blank_clicked()
     assert window.notebook.get_n_pages() == 2
@@ -86,19 +86,19 @@ def test_gui_walkthrough(meld_app):
     # Close pages one by one
     window.action_close()
     assert window.notebook.get_n_pages() == 1
-    
+
     window.notebook.set_current_page(0)
     window.action_close()
     assert window.notebook.get_n_pages() == 0
 
 
 def test_infobar_compatibility():
-    
+
     infobar = Gtk.InfoBar()
-    
+
     # Verify our monkey-patches exist and return Gtk.Box objects
     content_area = infobar.get_content_area()
     action_area = infobar.get_action_area()
-    
+
     assert isinstance(content_area, Gtk.Box)
     assert isinstance(action_area, Gtk.Box)

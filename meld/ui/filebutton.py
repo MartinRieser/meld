@@ -106,4 +106,3 @@ class MeldFileButton(Gtk.Button):
             dialog.select_folder(parent_win, None, on_dialog_done)
         else:
             dialog.open(parent_win, None, on_dialog_done)
-
