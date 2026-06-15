@@ -881,8 +881,7 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             treeview.set_headers_visible(have_extra_columns)
 
     def get_filter_visibility(self) -> Tuple[bool, bool, bool]:
-        # TODO: Make text filters available in folder comparison
-        return False, True, False
+        return True, True, False
 
     def on_file_filters_changed(self, app):
         relevant_change = self.create_name_filters()

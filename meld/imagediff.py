@@ -152,10 +152,18 @@ class ImageDiff(Gtk.Box, MeldDoc):
         self.lines_removed = 0
         self.focus_pane = None
 
-        # TODO: Add synchronized scrolling for large images.
+        self._sync_vscroll_lock = False
+        self._sync_hscroll_lock = False
+
+        for w in self.scroll_window:
+            w.get_vadjustment().connect("value-changed", self._sync_vscroll)
+            w.get_hadjustment().connect("value-changed", self._sync_hscroll)
 
         # Set up per-view action group for top-level menu insertion
         self.view_action_group = Gio.SimpleActionGroup()
+
+        action = Gio.PropertyAction.new('lock-scrolling', self, 'lock_scrolling')
+        self.view_action_group.add_action(action)
 
         # Manually handle GAction additions
         # TODO: Highlight the selected image.
@@ -320,3 +328,31 @@ class ImageDiff(Gtk.Box, MeldDoc):
     @Gtk.Template.Callback()
     def on_imageview_focus_out_event(self, view, event):
         self._set_external_action_sensitivity()
+
+    def _sync_vscroll(self, adjustment):
+        if self._sync_vscroll_lock or self.props.lock_scrolling:
+            return
+
+        self._sync_vscroll_lock = True
+        try:
+            val = adjustment.get_value()
+            for sw in self.scroll_window:
+                adj = sw.get_vadjustment()
+                if adj is not adjustment:
+                    adj.set_value(val)
+        finally:
+            self._sync_vscroll_lock = False
+
+    def _sync_hscroll(self, adjustment):
+        if self._sync_hscroll_lock or self.props.lock_scrolling:
+            return
+
+        self._sync_hscroll_lock = True
+        try:
+            val = adjustment.get_value()
+            for sw in self.scroll_window:
+                adj = sw.get_hadjustment()
+                if adj is not adjustment:
+                    adj.set_value(val)
+        finally:
+            self._sync_hscroll_lock = False
