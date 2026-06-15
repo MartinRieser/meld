@@ -27,6 +27,7 @@
     <file>ui/filediff-actions.ui</file>
     <file>ui/filediff-menus.ui</file>
     <file>ui/filediff.ui</file>
+    <file preprocess="xml-stripblanks">ui/fourdiff.ui</file>
     <file>ui/filter-list.ui</file>
     <file>ui/findbar.ui</file>
     <file>ui/imagediff-actions.ui</file>

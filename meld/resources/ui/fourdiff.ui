@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <template class="FourDiff" parent="GtkBox">
+    <property name="orientation">vertical</property>
+    <child>
+      <object class="GtkPaned" id="paned_main">
+        <property name="focusable">1</property>
+        <property name="position">500</property>
+        <property name="hexpand">1</property>
+        <property name="vexpand">1</property>
+      </object>
+    </child>
+  </template>
+</interface>

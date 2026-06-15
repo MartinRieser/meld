@@ -403,6 +403,16 @@ class MeldWindow(Gtk.ApplicationWindow):
             doc.set_meta(meta)
         return doc
 
+    def append_fourdiff(self, gfiles, *, encodings=None, meta=None):
+        assert len(gfiles) == 4
+        from meld.fourdiff import FourDiff
+        doc = FourDiff()
+        self._append_page(doc)
+        doc.set_files(gfiles, encodings)
+        if meta is not None:
+            doc.set_meta(meta)
+        return doc
+
     def append_filemerge(self, gfiles, merge_output=None):
         if len(gfiles) != 3:
             raise ValueError(
@@ -424,6 +434,9 @@ class MeldWindow(Gtk.ApplicationWindow):
         merge_output: Optional[Gio.File] = None,
         meta: Optional[Dict[str, Any]] = None,
     ):
+        if len(gfiles) == 4:
+            return self.append_fourdiff(gfiles, meta=meta)
+
         # If every side is an archive, transparently extract and treat
         # the comparison as a folder diff. Heterogeneous archives (e.g.
         # zip vs. tar.gz) are allowed; if only one side is an archive
@@ -540,7 +553,7 @@ class MeldWindow(Gtk.ApplicationWindow):
             else:
                 self._single_file_open(gfile)
 
-        elif len(gfiles) in (2, 3):
+        elif len(gfiles) in (2, 3, 4):
             tab = self.append_diff(gfiles, auto_compare=auto_compare,
                                    auto_merge=auto_merge)
         if tab:

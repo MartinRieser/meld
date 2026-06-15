@@ -184,7 +184,7 @@ class MeldApp(Gtk.Application):
                 diff_files_args.append(arg)
                 del parser.rargs[0]
 
-        if len(diff_files_args) not in (1, 2, 3):
+        if len(diff_files_args) not in (1, 2, 3, 4):
             raise optparse.OptionValueError(
                 _("wrong number of arguments supplied to --diff"))
         parser.values.diff.append(diff_files_args)
@@ -301,8 +301,8 @@ class MeldApp(Gtk.Application):
             cleanup()
             return parser.exit_status
 
-        if len(args) > 3:
-            parser.local_error(_("too many arguments (wanted 0-3, got %d)") %
+        if len(args) > 4:
+            parser.local_error(_("too many arguments (wanted 0-4, got %d)") %
                                len(args))
         elif options.auto_merge and len(args) < 3:
             parser.local_error(_("can’t auto-merge less than 3 files"))
