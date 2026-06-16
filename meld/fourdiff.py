@@ -46,7 +46,7 @@ class FourDiff(Gtk.Box, MeldDoc):
     paned_main = Gtk.Template.Child()
 
     def __init__(self):
-        Gtk.Box.__init__(self)
+        super().__init__()
         MeldDoc.__init__(self)
 
         self.filediff_left = FileDiff(2)
@@ -131,10 +131,12 @@ class FourDiff(Gtk.Box, MeldDoc):
         self.filediff_left.set_meta(meta)
         self.filediff_right.set_meta(meta)
 
-    def on_container_close_request(self) -> int:
-        # Check if Left/Right have unsaved changes
-        left_res = self.filediff_left.on_container_close_request()
-        right_res = self.filediff_right.on_container_close_request()
+    def on_delete_event(self) -> Gtk.ResponseType:
+        # Check if Left/Right have unsaved changes and clean up their monitors/matchers
+        left_res = self.filediff_left.on_delete_event()
+        right_res = self.filediff_right.on_delete_event()
         if left_res == Gtk.ResponseType.CANCEL or right_res == Gtk.ResponseType.CANCEL:
             return Gtk.ResponseType.CANCEL
+        if left_res == Gtk.ResponseType.APPLY or right_res == Gtk.ResponseType.APPLY:
+            return Gtk.ResponseType.APPLY
         return Gtk.ResponseType.OK
