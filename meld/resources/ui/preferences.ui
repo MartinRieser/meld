@@ -228,6 +228,14 @@
                                     </object>
                                 </child>
                                 <child>
+                                  <object class="GtkCheckButton" id="checkbutton_editable_readonly">
+                                    <property name="valign">center</property>
+                                    <property name="label" translatable="1">Allow editing of _read-only files</property>
+                                    <property name="focusable">1</property>
+                                    <property name="use_underline">1</property>
+                                    </object>
+                                </child>
+                                <child>
                                   <object class="GtkBox" id="hbox11">
                                     <property name="valign">center</property>
                                     <property name="spacing">6</property>

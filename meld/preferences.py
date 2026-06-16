@@ -270,6 +270,7 @@ class PreferencesDialog(Gtk.Dialog):
     checkbutton_show_whitespace = Gtk.Template.Child()
     checkbutton_spaces_instead_of_tabs = Gtk.Template.Child()
     checkbutton_use_syntax_highlighting = Gtk.Template.Child()
+    checkbutton_editable_readonly = Gtk.Template.Child()
     checkbutton_wrap_text = Gtk.Template.Child()
     checkbutton_wrap_word = Gtk.Template.Child()
     column_list_vbox = Gtk.Template.Child()
@@ -299,6 +300,7 @@ class PreferencesDialog(Gtk.Dialog):
             ('show-line-numbers', self.checkbutton_show_line_numbers, 'active'),  # noqa: E501
             ('prefer-dark-theme', self.checkbutton_prefer_dark_theme, 'active'),  # noqa: E501
             ('highlight-syntax', self.checkbutton_use_syntax_highlighting, 'active'),  # noqa: E501
+            ('editable-readonly', self.checkbutton_editable_readonly, 'active'),  # noqa: E501
             ('enable-space-drawer', self.checkbutton_show_whitespace, 'active'),  # noqa: E501
             ('use-system-editor', self.system_editor_checkbutton, 'active'),
             ('custom-editor-command', self.custom_edit_command_entry, 'text'),

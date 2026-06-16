@@ -139,6 +139,7 @@ class FileDiff(Gtk.Box, MeldDoc):
         ('ignore-blank-lines', 'ignore-blank-lines'),
         ('show-overview-map', 'show-overview-map'),
         ('overview-map-style', 'overview-map-style'),
+        ('editable-readonly', 'editable-readonly'),
     )
 
     ignore_blank_lines = GObject.Property(
@@ -149,6 +150,11 @@ class FileDiff(Gtk.Box, MeldDoc):
     )
     show_overview_map = GObject.Property(type=bool, default=True)
     overview_map_style = GObject.Property(type=str, default='chunkmap')
+    editable_readonly = GObject.Property(
+        type=bool,
+        nick="Allow editing of read-only files",
+        default=False,
+    )
     show_git_blame = GObject.Property(
         type=bool,
         nick="Show Git blame",
@@ -533,6 +539,7 @@ class FileDiff(Gtk.Box, MeldDoc):
 
         self.connect("notify::ignore-blank-lines", self.refresh_comparison)
         self.connect("notify::show-git-blame", self.on_show_git_blame_changed)
+        self.connect("notify::editable-readonly", self.on_editable_readonly_changed)
 
     def do_realize(self):
         Gtk.Box().do_realize(self)
@@ -2003,6 +2010,10 @@ class FileDiff(Gtk.Box, MeldDoc):
             'dialog-warning-symbolic', primary, secondary, _("_Reload"),
             self.revert_pane, pane)
 
+    def on_editable_readonly_changed(self, *args):
+        for buf in self.textbuffer[:self.num_panes]:
+            self.update_buffer_writable(buf)
+
     def on_show_git_blame_changed(self, *args):
         show = self.props.show_git_blame
         for pane in range(self.num_panes):
@@ -2450,8 +2461,8 @@ class FileDiff(Gtk.Box, MeldDoc):
         self.recompute_label()
         index = self.textbuffer.index(buf)
         self.readonlytoggle[index].props.visible = not writable
-        # Make the buffer editable by default, even if it is not writable on disk.
-        self.set_buffer_editable(buf, True)
+        # Make the buffer editable if it is writable on disk, or if the user enabled editable-readonly setting.
+        self.set_buffer_editable(buf, writable or self.props.editable_readonly)
 
     def set_buffer_editable(self, buf, editable):
         index = self.textbuffer.index(buf)
