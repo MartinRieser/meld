@@ -2450,7 +2450,8 @@ class FileDiff(Gtk.Box, MeldDoc):
         self.recompute_label()
         index = self.textbuffer.index(buf)
         self.readonlytoggle[index].props.visible = not writable
-        self.set_buffer_editable(buf, writable)
+        # Make the buffer editable by default, even if it is not writable on disk.
+        self.set_buffer_editable(buf, True)
 
     def set_buffer_editable(self, buf, editable):
         index = self.textbuffer.index(buf)
