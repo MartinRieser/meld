@@ -46,5 +46,5 @@ class Vc(_vc.Vc):
         with tempfile.NamedTemporaryFile(
                 prefix='meld-tmp', suffix=suffix, delete=False) as f:
             with open(path, 'rb') as vc_file:
-                shutil.copyfileobj(vc_file, f)
+                shutil.copyfileobj(vc_file, f)  # type: ignore[misc]
         return f.name

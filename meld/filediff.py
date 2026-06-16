@@ -116,6 +116,14 @@ class CursorDetails:
         "pane", "pos", "line", "chunk", "prev", "next",
         "prev_conflict", "next_conflict",
     )
+    pane: Optional[int]
+    pos: Optional[int]
+    line: Optional[int]
+    chunk: Optional[object]
+    prev: Optional[int]
+    next: Optional[int]
+    prev_conflict: Optional[object]
+    next_conflict: Optional[object]
 
     def __init__(self):
         for var in self.__slots__:
@@ -289,13 +297,13 @@ class FileDiff(Gtk.Box, MeldDoc):
         self.warned_bad_comparison = False
         self.merge_output_saved = False
         self._keymask = 0
-        self.meta = {}
+        self.meta: dict = {}
         self.lines_removed = 0
         self.focus_pane = None
         self.textbuffer = [v.get_buffer() for v in self.textview]
         self.buffer_texts = [BufferLines(b) for b in self.textbuffer]
         self.undosequence = UndoSequence(self.textbuffer)
-        self.text_filters = []
+        self.text_filters: list = []
         meld_settings = get_meld_settings()
         self.settings_handlers = [
             meld_settings.connect(
@@ -318,7 +326,7 @@ class FileDiff(Gtk.Box, MeldDoc):
 
         self.syncpoints = Syncpoints(num_panes, get_mark_line)
         self.in_nested_textview_gutter_expose = False
-        self._cached_match = CachedSequenceMatcher(self.scheduler)
+        self._cached_match: Optional[CachedSequenceMatcher] = CachedSequenceMatcher(self.scheduler)
 
         # Set up property actions for statusbar toggles
         sourceview_prop_actions = [
@@ -871,6 +879,8 @@ class FileDiff(Gtk.Box, MeldDoc):
 
         if use_viewport:
             pane = self.cursor.pane
+            if pane is None:
+                return
             text_area = self.textview[pane].get_visible_rect()
 
             # Only do viewport-relative calculations if the chunk we'd
@@ -1356,7 +1366,7 @@ class FileDiff(Gtk.Box, MeldDoc):
         parent = self.meta.get('parent', None)
         saved = self.meta.get('middle_saved', False)
         prompt_resolve = self.meta.get('prompt_resolve', False)
-        if prompt_resolve and saved and parent.has_command('resolve'):
+        if prompt_resolve and saved and parent is not None and parent.has_command('resolve'):
             primary = _("Mark conflict as resolved?")
             secondary = _(
                 "If the conflict was resolved successfully, you may mark "
@@ -1391,6 +1401,7 @@ class FileDiff(Gtk.Box, MeldDoc):
                 buf.data.disconnect_monitor()
 
             try:
+                assert self._cached_match is not None
                 self._cached_match.stop()
                 self._cached_match = None
             except Exception:
@@ -1759,7 +1770,7 @@ class FileDiff(Gtk.Box, MeldDoc):
 
         buf.move_mark_by_name(LOAD_PROGRESS_MARK, buf.get_start_iter())
         cancellable = Gio.Cancellable()
-        errors = {}
+        errors: dict = {}
         loader.load_async(
             GLib.PRIORITY_HIGH,
             cancellable=cancellable,
@@ -1785,7 +1796,7 @@ class FileDiff(Gtk.Box, MeldDoc):
         total_bytes: int,
         loader: GtkSource.FileLoader,
         cancellable: Gio.Cancellable,
-        errors: dict[int, str],
+        errors: dict,
     ) -> None:
         failed_it = None
         buffer = loader.get_buffer()
@@ -1833,7 +1844,7 @@ class FileDiff(Gtk.Box, MeldDoc):
         self,
         loader: GtkSource.FileLoader,
         result: Gio.AsyncResult,
-        user_data: Tuple[int, dict[int, str]],
+        user_data: Tuple[int, dict],
     ):
         gfile = loader.get_location()
         buf = loader.get_buffer()
@@ -1963,14 +1974,14 @@ class FileDiff(Gtk.Box, MeldDoc):
             for pane in range(self.num_panes):
                 self.refresh_git_blame(pane)
 
-        langs = [LanguageManager.get_language_from_file(buf.data.gfile)
-                 for buf in self.textbuffer[:self.num_panes]]
+        langs: list = [LanguageManager.get_language_from_file(buf.data.gfile)
+                       for buf in self.textbuffer[:self.num_panes]]
 
         # If we have only one identified language then we assume that all of
         # the files are actually of that type.
         real_langs = [lang for lang in langs if lang]
         if real_langs and real_langs.count(real_langs[0]) == len(real_langs):
-            langs = (real_langs[0],) * len(langs)
+            langs = list((real_langs[0],) * len(langs))
 
         for i in range(self.num_panes):
             self.textbuffer[i].set_language(langs[i])
@@ -2237,8 +2248,10 @@ class FileDiff(Gtk.Box, MeldDoc):
                 match_cb = functools.partial(
                     apply_highlight, bufs, tags, start_marks, end_marks, (text1, textn),
                     to_pane, chunk)
+                assert self._cached_match is not None
                 self._cached_match.match(text1, textn, match_cb)
 
+        assert self._cached_match is not None
         self._cached_match.clean(self.linediffer.diff_count())
 
         self._set_merge_action_sensitivity()
@@ -2273,8 +2286,8 @@ class FileDiff(Gtk.Box, MeldDoc):
                 # change the text in question.
                 active_filters = any([f.active for f in self.text_filters])
 
-                bufs = self.textbuffer[:self.num_panes]
-                newlines = [b.data.sourcefile.get_newline_type() for b in bufs]
+                current_bufs: list = self.textbuffer[:self.num_panes]
+                newlines = [b.data.sourcefile.get_newline_type() for b in current_bufs]
                 different_newlines = not misc.all_same(newlines)
 
                 if active_filters:
@@ -2288,7 +2301,7 @@ class FileDiff(Gtk.Box, MeldDoc):
                         "Files are identical except for differing line "
                         "endings:\n%s")
 
-                    labels = [b.data.label for b in bufs]
+                    labels = [b.data.label for b in current_bufs]
                     newline_types = [
                         n if isinstance(n, tuple) else (n,) for n in newlines]
                     newline_strings = []
@@ -2923,7 +2936,7 @@ class SyncpointAction(Enum):
 class Syncpoints:
     def __init__(self, num_panes: int, comparator):
         self._num_panes = num_panes
-        self._points = [[] for _i in range(0, num_panes)]
+        self._points: list = [[] for _i in range(0, num_panes)]
         self._comparator = comparator
 
     def add(self, pane_idx: int, point):

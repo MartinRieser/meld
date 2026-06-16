@@ -33,12 +33,12 @@ class MeldSettings(GObject.GObject):
 
     def __init__(self):
         super().__init__()
-        self.on_setting_changed(settings, 'filename-filters')
-        self.on_setting_changed(settings, 'text-filters')
+        self.on_setting_changed(settings, 'filename-filters')  # type: ignore[attr-defined]
+        self.on_setting_changed(settings, 'text-filters')  # type: ignore[attr-defined]
         self.on_setting_changed(settings, 'use-system-font')
         self.on_setting_changed(settings, 'prefer-dark-theme')
         self.style_scheme = self._style_scheme_from_gsettings()
-        settings.connect('changed', self.on_setting_changed)
+        settings.connect('changed', self.on_setting_changed)  # type: ignore[attr-defined]
 
     def on_setting_changed(self, settings, key):
         if key == 'filename-filters':
@@ -59,8 +59,8 @@ class MeldSettings(GObject.GObject):
     def _style_scheme_from_gsettings(self):
         from meld.style import set_base_style_scheme
         manager = GtkSource.StyleSchemeManager.get_default()
-        prefer_dark = settings.get_boolean("prefer-dark-theme")
-        scheme_id = settings.get_string('style-scheme')
+        prefer_dark = settings.get_boolean("prefer-dark-theme")  # type: ignore[attr-defined]
+        scheme_id = settings.get_string('style-scheme')  # type: ignore[attr-defined]
 
         if prefer_dark and scheme_id in ('classic', 'meld-base'):
             scheme_id = 'meld-dark'
@@ -75,7 +75,7 @@ class MeldSettings(GObject.GObject):
         return scheme
 
     def _filters_from_gsetting(self, key, filt_type):
-        filter_params = settings.get_value(key)
+        filter_params = settings.get_value(key)  # type: ignore[attr-defined]
         filters = [
             meld.filters.FilterEntry.new_from_gsetting(params, filt_type)
             for params in filter_params
@@ -83,7 +83,7 @@ class MeldSettings(GObject.GObject):
         return filters
 
     def _current_font_from_gsetting(self, *args):
-        if settings.get_boolean('use-system-font'):
+        if settings.get_boolean('use-system-font'):  # type: ignore[attr-defined]
             if sys.platform == 'win32':
                 font_string = 'Consolas 11'
             elif interface_settings:
@@ -92,7 +92,7 @@ class MeldSettings(GObject.GObject):
             else:
                 font_string = 'monospace'
         else:
-            font_string = settings.get_string('custom-font')
+            font_string = settings.get_string('custom-font')  # type: ignore[attr-defined]
         return Pango.FontDescription(font_string)
 
 

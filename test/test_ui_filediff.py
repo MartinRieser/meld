@@ -108,7 +108,7 @@ def test_filediff_save_file(tmp_path):
         time.sleep(0.01)
 
     # Mock _get_focused_pane to return pane 0
-    filediff._get_focused_pane = lambda: 0
+    filediff._get_focused_pane = lambda: 0  # type: ignore[method-assign]
 
     # Modify pane 0 buffer
     buf0 = filediff.textbuffer[0]
@@ -187,7 +187,7 @@ def test_filediff_exit_code_with_output_saved_but_modified():
     # Modify buffer
     filediff.textbuffer[1].set_text("unsaved modifications")
     # Mock check_save_modified to simulate choosing "Close without Saving" (returning OK)
-    filediff.check_save_modified = lambda *args: Gtk.ResponseType.OK
+    filediff.check_save_modified = lambda *args: Gtk.ResponseType.OK  # type: ignore[method-assign]
 
     emitted_code = None
     def on_close(obj, exit_code):

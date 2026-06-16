@@ -17,7 +17,7 @@
 
 import logging
 from collections.abc import Sequence
-from typing import Optional
+from typing import Any, Optional
 
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, GObject, Gtk, GtkSource
 
@@ -125,7 +125,7 @@ class ImageDiff(Gtk.Box, MeldDoc):
     ):
         super().__init__()
 
-        self.files = [None, None, None]
+        self.files: list[Optional[Gio.File]] = [None, None, None]
 
         # FIXME:
         # This unimaginable hack exists because GObject (or GTK+?)
@@ -148,7 +148,7 @@ class ImageDiff(Gtk.Box, MeldDoc):
 
         self.warned_bad_comparison = False
         self._keymask = 0
-        self.meta = {}
+        self.meta: dict[str, Any] = {}
         self.lines_removed = 0
         self.focus_pane = None
 

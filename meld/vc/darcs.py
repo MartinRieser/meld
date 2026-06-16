@@ -107,7 +107,8 @@ class Vc(_vc.Vc):
 
         with tempfile.NamedTemporaryFile(prefix='meld-tmp',
                                          suffix=suffix, delete=False) as f:
-            shutil.copyfileobj(process.stdout, f)
+            assert process.stdout is not None
+            shutil.copyfileobj(process.stdout, f)  # type: ignore[misc]
         return f.name
 
     @classmethod
@@ -140,8 +141,8 @@ class Vc(_vc.Vc):
             # to STATE_NORMAL.
             self._tree_cache[path] = _vc.STATE_NORMAL
         else:
-            tree_cache = defaultdict(int)
-            tree_meta_cache = defaultdict(list)
+            tree_cache: defaultdict = defaultdict(int)
+            tree_meta_cache: defaultdict = defaultdict(list)
             self._rename_cache = rename_cache = {}
             self._reverse_rename_cache = {}
             old_name = None
@@ -172,4 +173,4 @@ class Vc(_vc.Vc):
 
             self._tree_cache.update(
                 dict((x, y) for x, y in tree_cache.items()))
-            self._tree_meta_cache = dict(tree_meta_cache)
+            self._tree_meta_cache = _vc.CaseInsensitivePathDict(tree_meta_cache)

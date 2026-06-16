@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 # handle Unicode translated strings within optparse itself that will
 # otherwise crash badly. This just makes optparse use our ugettext
 # import of _, rather than the non-unicode gettext.
-optparse._ = _
+optparse._ = _  # type: ignore[attr-defined]
 
 
 class MeldApp(Gtk.Application):

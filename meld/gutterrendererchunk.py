@@ -49,11 +49,11 @@ _background_rgba = None
 
 class MeldGutterRenderer:
     def set_renderer_defaults(self):
-        self.set_alignment_mode(GtkSource.GutterRendererAlignmentMode.FIRST)
-        self.props.xpad = 3
-        self.props.ypad = 0
-        self.props.xalign = 0.5
-        self.props.yalign = 0.5
+        self.set_alignment_mode(GtkSource.GutterRendererAlignmentMode.FIRST)  # type: ignore[attr-defined]
+        self.props.xpad = 3  # type: ignore[attr-defined]
+        self.props.ypad = 0  # type: ignore[attr-defined]
+        self.props.xalign = 0.5  # type: ignore[attr-defined]
+        self.props.yalign = 0.5  # type: ignore[attr-defined]
 
     def on_setting_changed(self, settings, key):
         if key == "style-scheme":
@@ -98,17 +98,17 @@ class MeldGutterRenderer:
 
     def query_chunks(self, start, end, state):
         line = start.get_line()
-        chunk_index = self.linediffer.locate_chunk(self.from_pane, line)[0]
+        chunk_index = self.linediffer.locate_chunk(self.from_pane, line)[0]  # type: ignore[attr-defined]
         in_chunk = chunk_index is not None
 
         chunk = None
         if in_chunk:
-            chunk = self.linediffer.get_chunk(chunk_index, self.from_pane, self.to_pane)
+            chunk = self.linediffer.get_chunk(chunk_index, self.from_pane, self.to_pane)  # type: ignore[attr-defined]
 
         if chunk is not None:
             if chunk[1] == chunk[2]:
                 background_rgba = get_background_rgba(self)
-            elif self.props.view.current_chunk_check(chunk):
+            elif self.props.view.current_chunk_check(chunk):  # type: ignore[attr-defined]
                 background_rgba = self.chunk_highlights[chunk[0]]
             else:
                 background_rgba = self.fill_colors[chunk[0]]
@@ -116,7 +116,7 @@ class MeldGutterRenderer:
             # TODO: Remove when fixed in upstream GTK+
             background_rgba = get_background_rgba(self)
         self._chunk = chunk
-        self.set_background(background_rgba)
+        self.set_background(background_rgba)  # type: ignore[attr-defined]
         return in_chunk
 
 
@@ -132,10 +132,10 @@ class GutterRendererChunkLines(GtkSource.GutterRendererText, MeldGutterRenderer)
     def __init__(self, from_pane, to_pane, linediffer):
         super().__init__()
         self.set_renderer_defaults()
-        self.from_pane = from_pane
-        self.to_pane = to_pane
+        self.from_pane = from_pane  # type: ignore[attr-defined]
+        self.to_pane = to_pane  # type: ignore[attr-defined]
         # FIXME: Don't pass in the linediffer; pass a generator like elsewhere
-        self.linediffer = linediffer
+        self.linediffer = linediffer  # type: ignore[attr-defined]
 
         self.num_line_digits = 0
         self.changed_handler_id = None

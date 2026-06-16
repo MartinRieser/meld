@@ -171,6 +171,7 @@ class MyersSequenceMatcher(difflib.SequenceMatcher):
         algorithm backward scanning of matching chunks might reveal
         some smaller chunks that can be combined together.
         """
+        assert self.matching_blocks is not None
         mb = [self.matching_blocks[-1]]
         i = len(self.matching_blocks) - 2
         while i >= 0:
@@ -201,7 +202,8 @@ class MyersSequenceMatcher(difflib.SequenceMatcher):
          * shift positions and split blocks based on the list of discarded
            non-matching lines
         """
-        self.matching_blocks = matching_blocks = []
+        matching_blocks: list[tuple[int, int, int]] = []
+        self.matching_blocks = matching_blocks
 
         common_prefix = self.common_prefix
         common_suffix = self.common_suffix
@@ -242,7 +244,7 @@ class MyersSequenceMatcher(difflib.SequenceMatcher):
                                     common_suffix))
         matching_blocks.append((len(self.a), len(self.b), 0))
         # clean-up to free memory
-        self.aindex = self.bindex = None
+        self.aindex = self.bindex = None  # type: ignore[assignment]
 
     def initialise(self):
         """
@@ -286,8 +288,8 @@ class MyersSequenceMatcher(difflib.SequenceMatcher):
                             x += 1
                             yv += 1
                         snake = x - snake
-                        node = (node, x - snake, yv - snake, snake)
-                    fp[km] = (yv, node)
+                        node = (node, x - snake, yv - snake, snake)  # type: ignore[assignment]
+                    fp[km] = (yv, node)  # type: ignore[assignment]
                 # move along horizontal edge
                 yh = -1
                 node = None
@@ -305,8 +307,8 @@ class MyersSequenceMatcher(difflib.SequenceMatcher):
                             x += 1
                             yh += 1
                         snake = x - snake
-                        node = (node, x - snake, yh - snake, snake)
-                    fp[km] = (yh, node)
+                        node = (node, x - snake, yh - snake, snake)  # type: ignore[assignment]
+                    fp[km] = (yh, node)  # type: ignore[assignment]
                 # point on the diagonal that leads to the sink
                 if yv < yh:
                     y, node = fp[delta + 1]
@@ -322,8 +324,8 @@ class MyersSequenceMatcher(difflib.SequenceMatcher):
                         x += 1
                         y += 1
                     snake = x - snake
-                    node = (node, x - snake, y - snake, snake)
-                fp[delta] = (y, node)
+                    node = (node, x - snake, y - snake, snake)  # type: ignore[assignment]
+                fp[delta] = (y, node)  # type: ignore[assignment]
                 if y >= n:
                     lastsnake = node
                     break
@@ -394,7 +396,7 @@ class SyncPointMyersSequenceMatcher(MyersSequenceMatcher):
             self.split_matching_blocks = []
             self.matching_blocks = []
             for ai, bi, a, b in chunks:
-                matching_blocks = []
+                matching_blocks: list[tuple[int, int, int]] = []
                 matcher = MyersSequenceMatcher(self.isjunk, a, b)
                 for i in matcher.initialise():
                     yield None

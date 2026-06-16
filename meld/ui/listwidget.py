@@ -30,31 +30,31 @@ class EditableListWidget:
     """
 
     def setup_sensitivity_handling(self):
-        model = self.treeview.get_model()
+        model = self.treeview.get_model()  # type: ignore[attr-defined]
         model.connect("row-inserted", self._update_sensitivity)
         model.connect("rows-reordered", self._update_sensitivity)
-        self.treeview.get_selection().connect(
+        self.treeview.get_selection().connect(  # type: ignore[attr-defined]
             "changed", self._update_sensitivity)
         self._update_sensitivity()
 
     def _update_sensitivity(self, *args):
         model, it, path = self._get_selected()
         if not it:
-            self.remove.set_sensitive(False)
-            self.move_up.set_sensitive(False)
-            self.move_down.set_sensitive(False)
+            self.remove.set_sensitive(False)  # type: ignore[attr-defined]
+            self.move_up.set_sensitive(False)  # type: ignore[attr-defined]
+            self.move_down.set_sensitive(False)  # type: ignore[attr-defined]
         else:
-            self.remove.set_sensitive(True)
-            self.move_up.set_sensitive(path > 0)
-            self.move_down.set_sensitive(path < len(model) - 1)
+            self.remove.set_sensitive(True)  # type: ignore[attr-defined]
+            self.move_up.set_sensitive(path > 0)  # type: ignore[attr-defined]
+            self.move_down.set_sensitive(path < len(model) - 1)  # type: ignore[attr-defined]
 
     def _get_selected(self):
-        model, it = self.treeview.get_selection().get_selected()
+        model, it = self.treeview.get_selection().get_selected()  # type: ignore[attr-defined]
         path = model.get_path(it)[0] if it else None
         return (model, it, path)
 
     def add_entry(self):
-        self.treeview.get_model().append(self.default_entry)
+        self.treeview.get_model().append(self.default_entry)  # type: ignore[attr-defined]
 
     def remove_selected_entry(self):
         model, it, path = self._get_selected()

@@ -14,6 +14,7 @@ if os.path.exists(os.path.join(melddir, "meld.doap")):
         loader = importlib.machinery.SourceFileLoader(
             'meld.conf', os.path.join(melddir, 'meld/conf.py.in'))
         spec = importlib.util.spec_from_loader(loader.name, loader)
+        assert spec is not None
         mod = importlib.util.module_from_spec(spec)
         loader.exec_module(mod)
         import meld

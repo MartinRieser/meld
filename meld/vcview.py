@@ -22,7 +22,7 @@ import shutil
 import stat
 import sys
 import tempfile
-from typing import Tuple
+from typing import Any, Tuple
 
 from gi.repository import Gdk, Gio, GLib, GObject, Gtk, Pango
 
@@ -61,14 +61,15 @@ def cleanup_temp():
         try:
             assert (os.path.exists(f) and os.path.isabs(f) and
                     os.path.dirname(f) == temp_location)
-            shutil.rmtree(f, ignore_errors=1)
+            shutil.rmtree(f, ignore_errors=True)
         except Exception:
             except_str = "{0[0]}: \"{0[1]}\"".format(sys.exc_info())
             print("Directory \"{0}\" not removed due to".format(f), except_str,
                   file=sys.stderr)
 
 
-_temp_dirs, _temp_files = [], []
+_temp_dirs: list[Any] = []
+_temp_files: list[Any] = []
 atexit.register(cleanup_temp)
 
 
@@ -248,10 +249,10 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             ('vc-status-ignored', self.action_filter_state_change,
                 new_boolean('ignored' in self.props.status_filters)),
         )
-        for (name, callback, state) in stateful_actions:
+        for (name, cb, state) in stateful_actions:
             action = Gio.SimpleAction.new_stateful(name, None, state)
-            if callback:
-                action.connect('change-state', callback)
+            if cb is not None:
+                action.connect('change-state', cb)
             self.view_action_group.add_action(action)
 
         builder = Gtk.Builder.new_from_resource(
@@ -289,6 +290,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         self.location = None
         self.vc = None
 
+        assert settings is not None
         settings.bind('vc-console-visible', self.console_vbox, 'visible',
                       Gio.SettingsBindFlags.DEFAULT)
         settings.bind('vc-console-pane-position', self.vc_console_vpaned,
@@ -400,6 +402,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         self.recompute_label()
         self.scheduler.remove_all_tasks()
 
+        assert self.vc is not None
         # If the user is just diffing a file (i.e., not a directory),
         # there's no need to scan the rest of the repository.
         if not os.path.isdir(self.vc.location):
@@ -427,6 +430,8 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         return RecentType.VersionControl, uris
 
     def recompute_label(self):
+        assert self.location is not None
+        assert self.vc is not None
         self.label_text = os.path.basename(self.location)
         self.tooltip_text = "\n".join((
             # TRANSLATORS: This is the name of the version control
@@ -443,6 +448,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         self.recompute_label()
 
     def _search_recursively_iter(self, start_path, replace=False):
+        assert self.vc is not None
 
         # Initial yield so when we add this to our tasks, we don't
         # create iterators that may be invalidated.
@@ -550,6 +556,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             self.create_diff_signal.emit(gfiles, kwargs)
 
     def get_diff_arguments_by_path(self, path):
+        assert self.vc is not None
         if isinstance(path, str):
             filepath = path
             it = self.find_iter_by_name(path)
@@ -759,23 +766,28 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             pass
 
     def action_update(self, *args):
+        assert self.vc is not None
         self.vc.update(self.runner)
 
     def action_push(self, *args):
+        assert self.vc is not None
         response = PushDialog(self).run()
         if response == Gtk.ResponseType.OK:
             self.vc.push(self.runner)
 
     def action_commit(self, *args):
+        assert self.vc is not None
         response, commit_msg = CommitDialog(self).run()
         if response == Gtk.ResponseType.OK:
             self.vc.commit(
                 self.runner, self._get_selected_files(), commit_msg)
 
     def action_add(self, *args):
+        assert self.vc is not None
         self.vc.add(self.runner, self._get_selected_files())
 
     def action_unstage(self, *args):
+        assert self.vc is not None
         self.vc.unstage(self.runner, self._get_selected_files())
 
     def action_remove(self, *args):
@@ -799,12 +811,15 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             if response != Gtk.ResponseType.OK:
                 return
 
+        assert self.vc is not None
         self.vc.remove(self.runner, selected)
 
     def action_resolved(self, *args):
+        assert self.vc is not None
         self.vc.resolve(self.runner, self._get_selected_files())
 
     def action_revert(self, *args):
+        assert self.vc is not None
         self.vc.revert(self.runner, self._get_selected_files())
 
     def action_delete(self, *args):
@@ -844,6 +859,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         self.set_location(self.model.get_file_path(root))
 
     def refresh_partial(self, where):
+        assert self.vc is not None
         if not self.get_action_state('vc-flatten'):
             it = self.find_iter_by_name(where)
             if not it:
@@ -861,6 +877,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             self.refresh()
 
     def _update_item_state(self, it, entry):
+        assert self.vc is not None
         self.model.set_path_state(it, 0, entry.state, entry.isdir)
 
         location = Gio.File.new_for_path(self.vc.location)
@@ -872,6 +889,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         self.model.set_value(it, COL_OPTIONS, entry.options)
 
     def on_file_changed(self, filename):
+        assert self.vc is not None
         it = self.find_iter_by_name(filename)
         if it:
             path = self.model.get_file_path(it)

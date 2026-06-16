@@ -139,7 +139,7 @@ class UndoSequence(GObject.GObject):
                 # and then modify the buffer, we lose the checkpoint altogether
                 start, end = self.checkpoints.get(action.buffer, (None, None))
                 if start is not None and start > self.next_redo:
-                    self.checkpoints[action.buffer] = (None, None)
+                    self.checkpoints[action.buffer] = [None, None]
             could_undo = self.can_undo()
             could_redo = self.can_redo()
             self.actions[self.next_redo:] = []
@@ -201,12 +201,11 @@ class UndoSequence(GObject.GObject):
         start = self.next_redo
         while start > 0 and self.actions[start - 1].buffer != buf:
             start -= 1
-        end = self.next_redo
-        while (end < len(self.actions) - 1 and
-               self.actions[end + 1].buffer != buf):
-            end += 1
-        if end == len(self.actions):
-            end = None
+        end_idx = self.next_redo
+        while (end_idx < len(self.actions) - 1 and
+               self.actions[end_idx + 1].buffer != buf):
+            end_idx += 1
+        end = None if end_idx == len(self.actions) else end_idx
         self.checkpoints[buf] = [start, end]
         self.emit('checkpointed', buf, True)
 

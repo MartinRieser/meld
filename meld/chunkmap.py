@@ -256,7 +256,7 @@ class ChunkMap(Gtk.DrawingArea):
         npress: int,
         x: float,
         y: float,
-    ) -> bool:
+    ) -> None:
         self.grab_remove()
         self._have_grab = False
 
@@ -266,7 +266,7 @@ class ChunkMap(Gtk.DrawingArea):
         x: float | None = None,
         y: float | None = None,
     ):
-        if self._have_grab:
+        if self._have_grab and y is not None:
             self._scroll_fraction(y, animate=False)
 
         return True
@@ -434,7 +434,7 @@ class TreeViewChunkMap(ChunkMap):
                 for row in rowiter.iterchildren():
                     recurse_tree_states(row)
 
-        row_states = []
+        row_states: list = []
         model = self.treeview.get_model()
         recurse_tree_states(next(iter(model)))
         # Terminating mark to force the last chunk to be added

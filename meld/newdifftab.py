@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import enum
+from typing import Any
 
 from gi.repository import Gio, GLib, GObject, Gtk
 
@@ -167,7 +168,7 @@ class NewDiffTab(Gtk.Box, LabeledObjectMixin):
         choosers = type_choosers[self.diff_type][:self._get_num_paths()]
         compare_gfiles = [chooser.get_file() for chooser in choosers]
 
-        compare_kwargs = {}
+        compare_kwargs: dict[str, Any] = {}
 
         tab = self.diff_methods[self.diff_type](
             compare_gfiles, **compare_kwargs)

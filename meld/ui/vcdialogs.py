@@ -71,11 +71,11 @@ class CommitDialog(Gtk.Dialog):
         width_request, height_request = self.scrolledwindow1.get_size_request()
         self.scrolledwindow1.set_size_request(80 * char_width, height_request)
 
-        settings.bind('vc-show-commit-margin', self.textview,
+        settings.bind('vc-show-commit-margin', self.textview,  # type: ignore[attr-defined]
                       'show-right-margin', Gio.SettingsBindFlags.DEFAULT)
-        settings.bind('vc-commit-margin', self.textview,
+        settings.bind('vc-commit-margin', self.textview,  # type: ignore[attr-defined]
                       'right-margin-position', Gio.SettingsBindFlags.DEFAULT)
-        settings.bind('vc-break-commit-message', self,
+        settings.bind('vc-break-commit-message', self,  # type: ignore[attr-defined]
                       'break-commit-message', Gio.SettingsBindFlags.DEFAULT)
         self.show_all()
 

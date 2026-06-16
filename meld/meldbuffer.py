@@ -110,6 +110,7 @@ class MeldBufferData(GObject.GObject):
         self._label = None
         self._monitor = None
         self._sourcefile = None
+        self._disk_mtime: tuple[int, int] | None = None
         self.reset(gfile=None, state=MeldBufferState.EMPTY)
 
     def reset(self, gfile: Optional[Gio.File], state: MeldBufferState):
@@ -198,6 +199,8 @@ class MeldBufferData(GObject.GObject):
 
     @property
     def is_special(self):
+        if self._gfile is None:
+            return False
         try:
             info = self._gfile.query_info(
                 Gio.FILE_ATTRIBUTE_STANDARD_TYPE, 0, None)
@@ -207,6 +210,8 @@ class MeldBufferData(GObject.GObject):
 
     @property
     def file_id(self) -> Optional[str]:
+        if self._gfile is None:
+            return None
         try:
             info = self._gfile.query_info(Gio.FILE_ATTRIBUTE_ID_FILE, 0, None)
             return info.get_attribute_string(Gio.FILE_ATTRIBUTE_ID_FILE)

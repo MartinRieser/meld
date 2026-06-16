@@ -138,9 +138,11 @@ class Vc(_vc.Vc):
             if os.path.isdir(p):
                 cached_entries, entries = self._get_modified_files(p)
                 all_entries = set(entries + cached_entries)
-                names = [
-                    self.DIFF_RE.search(e).groups()[5] for e in all_entries
-                ]
+                names = []
+                for e in all_entries:
+                    m = self.DIFF_RE.search(e)
+                    if m:
+                        names.append(m.groups()[5])
                 files.extend(names)
             else:
                 files.append(os.path.relpath(p, self.root))
@@ -213,7 +215,7 @@ class Vc(_vc.Vc):
         prefix = 'meld-tmp-%s-' % _vc.CONFLICT_MERGED
         with tempfile.NamedTemporaryFile(
                 prefix=prefix, suffix=suffix, delete=False) as f:
-            shutil.copyfileobj(vc_file, f)
+            shutil.copyfileobj(vc_file, f)  # type: ignore[misc]
 
         return f.name, True
 
@@ -331,8 +333,8 @@ class Vc(_vc.Vc):
             # Unicode file names and file names containing quotes are
             # returned by git as quoted strings
             if name[0] == '"':
-                name = name.encode('latin1')
-                name = codecs.escape_decode(name[1:-1])[0].decode('utf-8')
+                name_bytes = name.encode('latin1')
+                name = codecs.escape_decode(name_bytes[1:-1])[0].decode('utf-8')  # type: ignore[attr-defined]
             return os.path.abspath(
                 os.path.join(self.location, name))
 
@@ -345,14 +347,16 @@ class Vc(_vc.Vc):
             # to STATE_NORMAL.
             self._tree_cache[get_real_path(path)] = _vc.STATE_NORMAL
         else:
-            tree_meta_cache = defaultdict(list)
-            staged = set()
-            unstaged = set()
+            tree_meta_cache: defaultdict = defaultdict(list)
+            staged: set[str] = set()
+            unstaged: set[str] = set()
 
             # We iterate over both cached entries and entries, accumulating
             # metadata from both, but using the state from entries.
             for entry in cached_entries + entries:
-                columns = self.DIFF_RE.search(entry).groups()
+                diff_match = self.DIFF_RE.search(entry)
+                assert diff_match is not None
+                columns = diff_match.groups()
                 old_mode, new_mode, old_sha, new_sha, statekey, path = columns
                 state = self.state_map.get(statekey.strip(), _vc.STATE_NONE)
                 path = get_real_path(path)

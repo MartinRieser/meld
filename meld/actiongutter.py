@@ -409,6 +409,7 @@ class ActionGutter(Gtk.DrawingArea):
             )
 
             pixbuf = self.action_map.get(action)
+            assert pixbuf is not None
             icon_x = button_x + (button_width - pixbuf.props.width) // 2
             icon_y = button_y + (button_height - pixbuf.props.height) // 2
             Gtk.render_icon(

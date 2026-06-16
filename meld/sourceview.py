@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 def get_custom_encoding_candidates():
     custom_candidates = []
     try:
-        for charset in settings.get_value('detect-encodings'):
+        for charset in settings.get_value('detect-encodings'):  # type: ignore[attr-defined]
             encoding = GtkSource.Encoding.get_from_charset(charset)
             if not encoding:
                 log.warning('Invalid charset "%s" skipped', charset)
@@ -87,15 +87,15 @@ class TextviewLineAnimation:
 class SourceViewHelperMixin:
 
     def get_y_for_line_num(self, line):
-        buf = self.get_buffer()
+        buf = self.get_buffer()  # type: ignore[attr-defined]
         it = buf.get_iter_at_line(line)
-        y, h = self.get_line_yrange(it)
+        y, h = self.get_line_yrange(it)  # type: ignore[attr-defined]
         if line >= buf.get_line_count():
             return y + h
         return y
 
     def get_line_num_for_y(self, y):
-        return self.get_line_at_y(y)[0].get_line()
+        return self.get_line_at_y(y)[0].get_line()  # type: ignore[attr-defined]
 
 
 class MeldSourceView(GtkSource.View, SourceViewHelperMixin):
@@ -115,10 +115,10 @@ class MeldSourceView(GtkSource.View, SourceViewHelperMixin):
     highlight_current_line_local = GObject.Property(type=bool, default=False)
 
     def get_show_line_numbers(self):
-        return self._show_line_numbers
+        return self._show_line_numbers  # type: ignore[has-type]
 
     def set_show_line_numbers(self, show):
-        if show == self._show_line_numbers:
+        if show == self._show_line_numbers:  # type: ignore[has-type]
             return
 
         if getattr(self, 'line_renderer', None):
@@ -201,7 +201,7 @@ class MeldSourceView(GtkSource.View, SourceViewHelperMixin):
         self.anim_source_id = None
         self.animating_chunks = []
         self.syncpoints = []
-        self._show_line_numbers = None
+        self._show_line_numbers = None  # type: ignore[assignment]
 
         buf = MeldBuffer()
         inline_tag = GtkSource.Tag.new("inline")
@@ -285,7 +285,7 @@ class MeldSourceView(GtkSource.View, SourceViewHelperMixin):
 
         def wrap_mode_from_bool(binding, from_value):
             if from_value:
-                settings_mode = settings.get_enum('wrap-mode')
+                settings_mode = settings.get_enum('wrap-mode')  # type: ignore[attr-defined]
                 if settings_mode == Gtk.WrapMode.NONE:
                     mode = Gtk.WrapMode.WORD
                 else:

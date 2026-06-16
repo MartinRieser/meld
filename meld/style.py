@@ -85,7 +85,7 @@ def colour_lookup_with_fallback(name: str, attribute: str) -> Gdk.RGBA:
     style_attr = getattr(style.props, attribute) if style else None
     if not style or not style_attr:
         try:
-            style = base_style_scheme.get_style(name)
+            style = base_style_scheme.get_style(name)  # type: ignore[union-attr]
             style_attr = getattr(style.props, attribute)
         except AttributeError:
             pass

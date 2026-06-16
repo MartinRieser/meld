@@ -1332,7 +1332,7 @@ def compat_gesture_multipress(*args, **kwargs):
     return gesture
 
 
-compat_gesture_multipress.new = original_gesture_multipress.new
+compat_gesture_multipress.new = original_gesture_multipress.new  # type: ignore[attr-defined]
 Gtk.GestureMultiPress = compat_gesture_multipress
 
 original_event_controller_motion = Gtk.EventControllerMotion
@@ -1346,7 +1346,7 @@ def compat_event_controller_motion(*args, **kwargs):
     return controller
 
 
-compat_event_controller_motion.new = original_event_controller_motion.new
+compat_event_controller_motion.new = original_event_controller_motion.new  # type: ignore[attr-defined]
 Gtk.EventControllerMotion = compat_event_controller_motion
 
 

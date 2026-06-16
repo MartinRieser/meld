@@ -62,4 +62,3 @@ def test_fourdiff_open_paths(meld_app, tmp_path):
     assert window.notebook.get_nth_page(0) == tab
     from meld.fourdiff import FourDiff
     assert isinstance(tab, FourDiff)
-

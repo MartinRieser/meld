@@ -61,7 +61,7 @@ class FilterList(Gtk.Box, EditableListWidget):
         self.pattern_column.set_cell_data_func(
             self.validity_renderer, self.valid_icon_celldata)
 
-        for filter_params in settings.get_value(self.settings_key):
+        for filter_params in settings.get_value(self.settings_key):  # type: ignore[attr-defined]
             filt = FilterEntry.new_from_gsetting(
                 filter_params, self.filter_type)
             if filt is None:
@@ -113,7 +113,7 @@ class FilterList(Gtk.Box, EditableListWidget):
 
     def _update_filter_string(self, *args):
         value = [(row[0], row[1], row[2]) for row in self.model]
-        settings.set_value(self.settings_key, GLib.Variant('a(sbs)', value))
+        settings.set_value(self.settings_key, GLib.Variant('a(sbs)', value))  # type: ignore[attr-defined]
 
 
 @Gtk.Template(resource_path='/org/gnome/meld/ui/column-list.ui')
@@ -150,7 +150,7 @@ class ColumnList(Gtk.Box, EditableListWidget):
 
         # Unwrap the variant
         prefs_columns = [
-            (k, v) for k, v in settings.get_value(self.settings_key)
+            (k, v) for k, v in settings.get_value(self.settings_key)  # type: ignore[attr-defined]
         ]
         column_vis = {}
         column_order = {}
@@ -190,7 +190,7 @@ class ColumnList(Gtk.Box, EditableListWidget):
 
     def _update_columns(self, *args):
         value = [(c[1].lower(), c[0]) for c in self.model]
-        settings.set_value(self.settings_key, GLib.Variant('a(sb)', value))
+        settings.set_value(self.settings_key, GLib.Variant('a(sb)', value))  # type: ignore[attr-defined]
 
 
 class GSettingsComboBox(Gtk.ComboBox):
@@ -201,7 +201,7 @@ class GSettingsComboBox(Gtk.ComboBox):
         self.connect('notify::active', self._active_changed)
 
     def bind_to(self, key):
-        settings.bind(
+        settings.bind(  # type: ignore[attr-defined]
             key, self, 'gsettings-value', Gio.SettingsBindFlags.DEFAULT)
 
     def _setting_changed(self, obj, val):
@@ -318,7 +318,7 @@ class PreferencesDialog(Gtk.Dialog):
             ('vc-show-commit-margin', self.checkbutton_break_commit_lines, 'sensitive'),  # noqa: E501
         ]
         for key, obj, attribute in bindings:
-            settings.bind(key, obj, attribute, Gio.SettingsBindFlags.DEFAULT)
+            settings.bind(key, obj, attribute, Gio.SettingsBindFlags.DEFAULT)  # type: ignore[attr-defined]
 
         invert_bindings = [
             ('use-system-editor', self.custom_edit_command_entry, 'sensitive'),
@@ -326,7 +326,7 @@ class PreferencesDialog(Gtk.Dialog):
             ('folder-shallow-comparison', self.checkbutton_folder_filter_text, 'sensitive'),  # noqa: E501
         ]
         for key, obj, attribute in invert_bindings:
-            settings.bind(
+            settings.bind(  # type: ignore[attr-defined]
                 key, obj, attribute, Gio.SettingsBindFlags.DEFAULT |
                 Gio.SettingsBindFlags.INVERT_BOOLEAN)
 
@@ -334,7 +334,7 @@ class PreferencesDialog(Gtk.Dialog):
             'active', self.checkbutton_wrap_word, 'sensitive',
             GObject.BindingFlags.DEFAULT)
 
-        wrap_mode = settings.get_enum('wrap-mode')
+        wrap_mode = settings.get_enum('wrap-mode')  # type: ignore[attr-defined]
         self.checkbutton_wrap_text.set_active(wrap_mode != Gtk.WrapMode.NONE)
         self.checkbutton_wrap_word.set_active(wrap_mode == Gtk.WrapMode.WORD)
 
@@ -375,7 +375,7 @@ class PreferencesDialog(Gtk.Dialog):
             wrap_mode = Gtk.WrapMode.WORD
         else:
             wrap_mode = Gtk.WrapMode.CHAR
-        settings.set_enum('wrap-mode', wrap_mode)
+        settings.set_enum('wrap-mode', wrap_mode)  # type: ignore[attr-defined]
 
     @Gtk.Template.Callback()
     def on_response(self, dialog, response_id):

@@ -24,18 +24,18 @@ class FilteredListSelector:
     def __init__(self):
         super().__init__()
 
-        self.treeview_selection = self.treeview.get_selection()
+        self.treeview_selection = self.treeview.get_selection()  # type: ignore[attr-defined]
         # FIXME: Should be able to access as a template child, but can't.
-        self.listfilter = self.treeview.get_model()
+        self.listfilter = self.treeview.get_model()  # type: ignore[attr-defined]
         self.liststore = self.listfilter.get_model()
 
         self.populate_model()
         self.filter_string = ''
-        self.entry.connect('changed', self.on_entry_changed)
+        self.entry.connect('changed', self.on_entry_changed)  # type: ignore[attr-defined]
         self.listfilter.set_visible_func(self.name_filter)
 
-        self.entry.connect('activate', self.on_activate)
-        self.treeview.connect('row-activated', self.on_activate)
+        self.entry.connect('activate', self.on_activate)  # type: ignore[attr-defined]
+        self.treeview.connect('row-activated', self.on_activate)  # type: ignore[attr-defined]
 
     def populate_model(self):
         raise NotImplementedError
@@ -44,16 +44,16 @@ class FilteredListSelector:
         if not value:
             return
 
-        new_value_getter = getattr(value, self.value_accessor)
+        new_value_getter = getattr(value, self.value_accessor)  # type: ignore[attr-defined]
         for row in self.liststore:
             row_value = row[self.VALUE_COLUMN]
             if not row_value:
                 continue
-            old_value_getter = getattr(row_value, self.value_accessor)
+            old_value_getter = getattr(row_value, self.value_accessor)  # type: ignore[attr-defined]
             if old_value_getter() != new_value_getter():
                 continue
             self.treeview_selection.select_path(row.path)
-            self.treeview.scroll_to_cell(row.path, None, True, 0.5, 0)
+            self.treeview.scroll_to_cell(row.path, None, True, 0.5, 0)  # type: ignore[attr-defined]
 
     def name_filter(self, model, it, *args):
         if not self.filter_string:
@@ -73,7 +73,7 @@ class FilteredListSelector:
         if not it:
             return
         value = model.get_value(it, self.VALUE_COLUMN)
-        self.emit(self.change_signal_name, value)
+        self.emit(self.change_signal_name, value)  # type: ignore[attr-defined]
 
 
 # The subclassing here is weird; the Selector must directly subclass

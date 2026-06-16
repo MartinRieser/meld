@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import codecs
 import configparser
 import os
 import sys
@@ -132,8 +133,7 @@ class HistoryCombo(Gtk.ComboBox):
         store.clear()
         messages = sorted(self.config.items(section_key))
         for key, message in messages[:self.props.history_length - 1]:
-            message = message.encode('utf8')
-            message = message.decode('unicode-escape')
+            message = codecs.decode(message, 'unicode-escape')
             firstline = message.splitlines()[0]
             store.append((firstline, message))
 

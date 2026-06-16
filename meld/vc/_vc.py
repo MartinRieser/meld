@@ -63,8 +63,8 @@ assert len(conflicts) == CONFLICT_MAX
 # Lifted from the itertools recipes section
 def partition(pred, iterable):
     t1, t2 = itertools.tee(iterable)
-    return (list(itertools.ifilterfalse(pred, t1)),
-            list(itertools.ifilter(pred, t2)))
+    return (list(itertools.filterfalse(pred, t1)),
+            list(filter(pred, t2)))
 
 
 class Entry:
@@ -152,7 +152,7 @@ class CaseInsensitivePathDict(dict):
         return super().get(os.path.normcase(key), default)
     def pop(self, key, default=None):
         return super().pop(os.path.normcase(key), default)
-    def update(self, other):
+    def update(self, other):  # type: ignore[override]
         for k, v in other.items():
             self[k] = v
 
@@ -172,6 +172,7 @@ class CaseInsensitivePathDefaultDict(collections.defaultdict):
 
 class Vc:
 
+    CMD: ClassVar[str | None]
     VC_DIR: ClassVar[str]
 
     #: Whether to walk the current location's parents to find a
@@ -322,7 +323,7 @@ class Vc:
             self._tree_cache = CaseInsensitivePathDict()
             self._tree_missing_cache = CaseInsensitivePathDefaultDict(set)
             path = './'
-        self._update_tree_state_cache(path)
+        self._update_tree_state_cache(path)  # type: ignore[attr-defined]
 
     def get_entries(self, base):
         parent = Gio.File.new_for_path(base)
@@ -497,7 +498,9 @@ def call_temp_output(cmd, cwd, file_id='', suffix=None):
     prefix = 'meld-tmp' + ('-' + file_id if file_id else '')
     with tempfile.NamedTemporaryFile(prefix=prefix,
                                      suffix=suffix, delete=False) as f:
-        shutil.copyfileobj(process.stdout, f)
+        assert process.stdout is not None
+        assert process.stderr is not None
+        shutil.copyfileobj(process.stdout, f)  # type: ignore[misc]
     process.wait()
     process.stdout.close()
     process.stderr.close()

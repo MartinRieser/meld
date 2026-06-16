@@ -85,7 +85,7 @@ class LinkMap(Gtk.DrawingArea):
             line_start = self.views[view_idx].get_y_for_line_num(line_num)
             return line_start - pix_start[view_idx] + y_offset[view_idx]
 
-        for c in self.filediff.linediffer.pair_changes(left, right, visible):
+        for c in self.filediff.linediffer.pair_changes(left, right, visible):  # type: ignore[union-attr]
             # f and t are short for "from" and "to"
             f0, f1 = [view_offset_line(0, line) for line in c[1:3]]
             t0, t1 = [view_offset_line(1, line) for line in c[3:5]]
@@ -131,8 +131,8 @@ class LinkMap(Gtk.DrawingArea):
             context.set_source(grad)
             context.fill_preserve()
 
-            chunk_idx = self.filediff.linediffer.locate_chunk(left, c[1])[0]
-            if chunk_idx == self.filediff.cursor.chunk:
+            chunk_idx = self.filediff.linediffer.locate_chunk(left, c[1])[0]  # type: ignore[union-attr]
+            if chunk_idx == self.filediff.cursor.chunk:  # type: ignore[union-attr]
                 highlight = self.fill_colors['current-chunk-highlight']
                 grad_hl = cairo.LinearGradient(x_steps[0], 0, x_steps[2], 0)
                 grad_hl.add_color_stop_rgba(0.0, highlight.red, highlight.green, highlight.blue, min(highlight.alpha * 1.5, 0.8))

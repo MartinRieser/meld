@@ -90,10 +90,10 @@ class MeldWindow(Gtk.ApplicationWindow):
                 "gear-menu", None, GLib.Variant.new_boolean(False),
             ),
         )
-        for (name, callback, state) in state_actions:
+        for (name, cb, state) in state_actions:
             action = Gio.SimpleAction.new_stateful(name, None, state)
-            if callback:
-                action.connect('change-state', callback)
+            if cb is not None:
+                action.connect('change-state', cb)
             self.add_action(action)
 
         # Initialise sensitivity for important actions
@@ -117,7 +117,7 @@ class MeldWindow(Gtk.ApplicationWindow):
         self.window_state.bind(self)
 
         self.should_close = False
-        self.idle_hooked = 0
+        self.idle_hooked: Optional[int] = 0
         self.scheduler = LifoScheduler()
         self.scheduler.connect("runnable", self.on_scheduler_runnable)
 
@@ -517,7 +517,7 @@ class MeldWindow(Gtk.ApplicationWindow):
             RecentType.Merge: self.append_filemerge,
             RecentType.VersionControl: self.append_vcview,
         }
-        tab = comparison_method[comparison_type](gfiles)
+        tab = comparison_method[comparison_type](gfiles)  # type: ignore[operator]
         self.notebook.set_current_page(self.notebook.page_num(tab))
         recent_comparisons.add(tab)
         return tab
@@ -532,6 +532,7 @@ class MeldWindow(Gtk.ApplicationWindow):
         path = gfile.get_path()
         doc.set_location(path)
         # Ensure that we have the correct state for the file we're opening
+        assert doc.vc is not None
         doc.vc.refresh_vc_state()
         doc.create_diff_signal.connect(
             lambda obj, arg, kwargs: self.append_diff(arg, **kwargs))

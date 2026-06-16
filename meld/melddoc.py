@@ -16,7 +16,7 @@
 
 import enum
 import logging
-from typing import Sequence
+from typing import Optional, Sequence
 
 from gi.repository import Gio, GObject, Gtk
 
@@ -37,7 +37,7 @@ class ComparisonState(enum.IntEnum):
 class LabeledObjectMixin(GObject.GObject):
 
     label_text = _("untitled")
-    tooltip_text = None
+    tooltip_text: Optional[str] = None
 
     @GObject.Signal
     def label_changed(self, label_text: str, tooltip_text: str) -> None:
@@ -92,7 +92,7 @@ class MeldDoc(LabeledObjectMixin, GObject.GObject):
 
     def get_comparison(self) -> RecentType:
         """Get the comparison type and URI(s) being compared"""
-        pass
+        raise NotImplementedError
 
     def action_stop(self, *args) -> None:
         if self.scheduler.tasks_pending():
