@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Experimental 4-pane merge interface for conflict resolution."""
+
 import logging
 from typing import Any, Dict, Sequence
 
@@ -26,6 +28,12 @@ log = logging.getLogger(__name__)
 
 @Gtk.Template(resource_path='/org/gnome/meld/ui/fourdiff.ui')
 class FourDiff(Gtk.Box, MeldDoc):
+    """A 4-pane comparison tab orchestrating two side-by-side FileDiff widgets.
+
+    The left FileDiff compares LOCAL vs. MERGED.
+    The right FileDiff compares BASE vs. REMOTE.
+    Scrolling is synchronized across all 4 panes.
+    """
     __gtype_name__ = "FourDiff"
 
     close_signal = MeldDoc.close_signal
