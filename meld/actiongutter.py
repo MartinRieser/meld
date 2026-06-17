@@ -31,7 +31,7 @@ class ActionIcons:
     #: Fixed size of the renderer. Ideally this would be font-dependent and
     #: would adjust to other textview attributes, but that's both quite
     #: difficult and not necessarily desirable.
-    pixbuf_height = 16
+    pixbuf_height = 18
     icon_cache: Dict[str, GdkPixbuf.Pixbuf] = {}
     icon_name_prefix = 'meld-change'
 
@@ -384,7 +384,6 @@ class ActionGutter(Gtk.DrawingArea):
             button_height -= 2
 
             button_style_context = get_style(None, 'button.flat.image-button')
-            button_style_context.add_class('merge-fab')
             if chunk == self.pointer_chunk:
                 button_style_context.set_state(Gtk.StateFlags.PRELIGHT)
 

@@ -63,6 +63,13 @@ class MeldApp(Gtk.Application):
         Gtk.Application.do_startup(self)
         meld.accelerators.register_accels(self)
 
+        # Register bundled icons with the icon theme so that
+        # Gtk.IconTheme.load_icon() can find them in the GResource.
+        display = Gdk.Display.get_default()
+        if display:
+            Gtk.IconTheme.get_for_display(display).add_resource_path(
+                meld.conf.RESOURCE_BASE + "/icons")
+
         actions = (
             ("preferences", self.preferences_callback),
             ("help", self.help_callback),

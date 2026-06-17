@@ -79,6 +79,14 @@ def compat_load_icon(self, icon_name, size, flags):
                 path = gfile.get_path()
                 if path:
                     return GdkPixbuf.Pixbuf.new_from_file_at_size(path, size, size)
+                uri = gfile.get_uri()
+                if uri and uri.startswith("resource://"):
+                    resource_path = uri[len("resource://"):]
+                    pixbuf = GdkPixbuf.Pixbuf.new_from_resource(resource_path)
+                    if pixbuf.props.width != size or pixbuf.props.height != size:
+                        pixbuf = pixbuf.scale_simple(
+                            size, size, GdkPixbuf.InterpType.BILINEAR)
+                    return pixbuf
     except Exception as e:
         log.warning(f"Failed to load icon '{icon_name}' from path: {e}")
     try:
@@ -91,6 +99,10 @@ def compat_load_icon(self, icon_name, size, flags):
                 path = gfile.get_path()
                 if path:
                     return GdkPixbuf.Pixbuf.new_from_file_at_size(path, size, size)
+                uri = gfile.get_uri()
+                if uri and uri.startswith("resource://"):
+                    resource_path = uri[len("resource://"):]
+                    return GdkPixbuf.Pixbuf.new_from_resource(resource_path)
     except Exception as e:
         log.debug("Failed to load compat icon: %s", e)
     return GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, True, 8, size, size)
@@ -426,23 +438,27 @@ Gtk.cairo_should_draw_window = lambda *args: True
 # Compatibility Cairo drawing functions
 def compat_render_background(context, cr, x, y, width, height):
     state = context.get_state()
+    cr.save()
     if state & Gtk.StateFlags.PRELIGHT:
-        cr.save()
-        cr.set_source_rgba(0.5, 0.5, 0.5, 0.15)
-        cr.rectangle(x, y, width, height)
-        cr.fill()
-        cr.restore()
+        cr.set_source_rgba(0.5, 0.5, 0.5, 0.35)
+    else:
+        cr.set_source_rgba(0.5, 0.5, 0.5, 0.2)
+    cr.rectangle(x, y, width, height)
+    cr.fill()
+    cr.restore()
 
 
 def compat_render_frame(context, cr, x, y, width, height):
     state = context.get_state()
+    cr.save()
     if state & Gtk.StateFlags.PRELIGHT:
-        cr.save()
-        cr.set_source_rgba(0.5, 0.5, 0.5, 0.3)
-        cr.set_line_width(1.0)
-        cr.rectangle(x + 0.5, y + 0.5, width - 1, height - 1)
-        cr.stroke()
-        cr.restore()
+        cr.set_source_rgba(0.5, 0.5, 0.5, 0.6)
+    else:
+        cr.set_source_rgba(0.5, 0.5, 0.5, 0.4)
+    cr.set_line_width(1.0)
+    cr.rectangle(x + 0.5, y + 0.5, width - 1, height - 1)
+    cr.stroke()
+    cr.restore()
 
 
 def compat_render_icon(context, cr, pixbuf, x, y):
@@ -837,19 +853,25 @@ def custom_new(cls, name, bases, dct):
 
     if "do_draw_layer" in dct:
 
-        def compat_do_snapshot_layer(self, layer, snapshot):
-            for base in bases:
-                if hasattr(base, "do_snapshot_layer"):
-                    base.do_snapshot_layer(self, layer, snapshot)
-                    break
+        def compat_snapshot_with_layers(self, snapshot):
             w = self.get_width()
             h = self.get_height()
             rect = Graphene.Rect.alloc()
             rect.init(0, 0, w, h)
+            # BELOW_TEXT: draw diff backgrounds behind the text
             cr = snapshot.append_cairo(rect)
-            self.do_draw_layer(layer, cr)
+            self.do_draw_layer(Gtk.TextViewLayer.BELOW_TEXT, cr)
+            # Let the parent render the text on top
+            for base in bases:
+                if hasattr(base, "do_snapshot"):
+                    base.do_snapshot(self, snapshot)
+                    break
+            # ABOVE_TEXT: draw any overlay content on top of text
+            cr2 = snapshot.append_cairo(rect)
+            self.do_draw_layer(Gtk.TextViewLayer.ABOVE_TEXT, cr2)
 
-        dct["do_snapshot_layer"] = compat_do_snapshot_layer
+        if "do_snapshot" not in dct:
+            dct["do_snapshot"] = compat_snapshot_with_layers
 
     return original_new(cls, name, bases, dct)
 
