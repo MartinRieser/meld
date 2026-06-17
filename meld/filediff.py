@@ -2701,6 +2701,14 @@ class FileDiff(Gtk.Box, MeldDoc):
                 self.dummy_toolbar_actiongutter[(n - 1) * 2:]):
             widget.hide()
 
+        # Show vertical scrollbar only on the last visible pane;
+        # scrolling is synchronized across panes via adjustments.
+        for i, sw in enumerate(self.scrolledwindow[:n]):
+            if i < n - 1:
+                sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
+            else:
+                sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+
         self.set_action_enabled('format-as-patch', n > 1)
 
         def chunk_iter(i):

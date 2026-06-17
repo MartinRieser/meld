@@ -2058,6 +2058,14 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
                 self.dummy_toolbar_linkmap[num_panes - 1:]):
             widget.hide()
 
+        # Show vertical scrollbar only on the last visible pane;
+        # scrolling is synchronized across panes via adjustments.
+        for i, sw in enumerate(self.scrolledwindow[:num_panes]):
+            if i < num_panes - 1:
+                sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
+            else:
+                sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+
         self.num_panes = num_panes
 
     def refresh(self):
