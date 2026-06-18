@@ -2704,11 +2704,14 @@ class FileDiff(Gtk.Box, MeldDoc):
         # Hide vertical scrollbar on all but the last visible pane;
         # scrolling is synchronized across panes via adjustments.
         for i, sw in enumerate(self.scrolledwindow[:n]):
-            ctx = sw.get_style_context()
-            if i < n - 1:
-                ctx.add_class('meld-no-vscroll')
-            else:
-                ctx.remove_class('meld-no-vscroll')
+            vbar = sw.get_vscrollbar()
+            if vbar:
+                if i < n - 1:
+                    vbar.hide()
+                    vbar.set_no_show_all(True)
+                else:
+                    vbar.set_no_show_all(False)
+                    vbar.show()
 
         self.set_action_enabled('format-as-patch', n > 1)
 

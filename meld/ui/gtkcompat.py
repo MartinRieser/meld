@@ -858,8 +858,15 @@ def custom_new(cls, name, bases, dct):
             h = self.get_height()
             rect = Graphene.Rect.alloc()
             rect.init(0, 0, w, h)
+            # Translate by scroll offset so that buffer coordinates
+            # used in do_draw_layer map correctly to the widget area.
+            hadj = self.get_hadjustment() if hasattr(self, "get_hadjustment") else None
+            vadj = self.get_vadjustment() if hasattr(self, "get_vadjustment") else None
+            sx = hadj.get_value() if hadj else 0
+            sy = vadj.get_value() if vadj else 0
             # BELOW_TEXT: draw diff backgrounds behind the text
             cr = snapshot.append_cairo(rect)
+            cr.translate(-sx, -sy)
             self.do_draw_layer(Gtk.TextViewLayer.BELOW_TEXT, cr)
             # Let the parent render the text on top
             for base in bases:
@@ -868,6 +875,7 @@ def custom_new(cls, name, bases, dct):
                     break
             # ABOVE_TEXT: draw any overlay content on top of text
             cr2 = snapshot.append_cairo(rect)
+            cr2.translate(-sx, -sy)
             self.do_draw_layer(Gtk.TextViewLayer.ABOVE_TEXT, cr2)
 
         if "do_snapshot" not in dct:

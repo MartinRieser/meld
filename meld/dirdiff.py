@@ -2061,11 +2061,14 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         # Hide vertical scrollbar on all but the last visible pane;
         # scrolling is synchronized across panes via adjustments.
         for i, sw in enumerate(self.scrolledwindow[:num_panes]):
-            ctx = sw.get_style_context()
-            if i < num_panes - 1:
-                ctx.add_class('meld-no-vscroll')
-            else:
-                ctx.remove_class('meld-no-vscroll')
+            vbar = sw.get_vscrollbar()
+            if vbar:
+                if i < num_panes - 1:
+                    vbar.hide()
+                    vbar.set_no_show_all(True)
+                else:
+                    vbar.set_no_show_all(False)
+                    vbar.show()
 
         self.num_panes = num_panes
 

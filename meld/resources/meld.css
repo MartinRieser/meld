@@ -138,11 +138,3 @@ meld-find-bar {
     border-color: @theme_selected_bg_color;
     color: @theme_selected_fg_color;
 }
-
-/* Hide the vertical scrollbar on non-last diff panes.
-   Scrolling still works via mouse wheel and synchronized adjustments. */
-.meld-no-vscroll scrollbar.vertical {
-    opacity: 0;
-    min-width: 0;
-    width: 0;
-}
