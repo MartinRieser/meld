@@ -2063,12 +2063,7 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         for i, sw in enumerate(self.scrolledwindow[:num_panes]):
             vbar = sw.get_vscrollbar()
             if vbar:
-                if i < num_panes - 1:
-                    vbar.hide()
-                    vbar.set_no_show_all(True)
-                else:
-                    vbar.set_no_show_all(False)
-                    vbar.show()
+                vbar.set_visible(i == num_panes - 1)
 
         self.num_panes = num_panes
 

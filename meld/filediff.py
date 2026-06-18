@@ -2706,12 +2706,7 @@ class FileDiff(Gtk.Box, MeldDoc):
         for i, sw in enumerate(self.scrolledwindow[:n]):
             vbar = sw.get_vscrollbar()
             if vbar:
-                if i < n - 1:
-                    vbar.hide()
-                    vbar.set_no_show_all(True)
-                else:
-                    vbar.set_no_show_all(False)
-                    vbar.show()
+                vbar.set_visible(i == n - 1)
 
         self.set_action_enabled('format-as-patch', n > 1)
 
