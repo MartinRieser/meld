@@ -130,6 +130,21 @@ def compat_get_iter_at_line_offset(self, line, char_offset):
 
 Gtk.TextBuffer.get_iter_at_line_offset = compat_get_iter_at_line_offset
 
+
+# Gtk.TextView.scroll_to_iter was removed in GTK 4; emulate via scroll_to_mark
+if not hasattr(Gtk.TextView, "scroll_to_iter"):
+
+    def compat_scroll_to_iter(
+        self, iter_, within_margin, use_align, xalign, yalign
+    ):
+        buf = self.get_buffer()
+        mark = buf.create_mark(None, iter_, True)
+        self.scroll_to_mark(mark, within_margin, use_align, xalign, yalign)
+        buf.delete_mark(mark)
+
+    Gtk.TextView.scroll_to_iter = compat_scroll_to_iter
+
+
 original_accelerator_parse = Gtk.accelerator_parse
 
 

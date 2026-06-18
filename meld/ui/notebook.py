@@ -77,7 +77,8 @@ class MeldNotebook(Gtk.Notebook):
         stylecontext.add_class('meld-notebook')
 
         # Alt+number tab switching (replaces GTK3 @binding-set CSS)
-        key_controller = Gtk.EventControllerKey(widget=self)
+        key_controller = Gtk.EventControllerKey()
+        self.add_controller(key_controller)
         key_controller.connect("key-pressed", self._on_key_pressed)
 
         self.connect('button-press-event', self.on_button_press_event)
