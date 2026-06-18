@@ -27,6 +27,13 @@ if os.path.exists(os.path.join(melddir, "meld.doap")):
 if 'meld.conf' in sys.modules:
     meld.conf.uninstalled()
 
+# Set resource overlay so source .ui files are used directly (mirrors
+# setup_resources in bin/meld, but without log-silencing concerns in tests)
+if 'meld.conf' in sys.modules:
+    resource_path = os.path.join(melddir, "meld", "resources")
+    os.environ['G_RESOURCE_OVERLAYS'] = '{}={}'.format(
+        meld.conf.RESOURCE_BASE, resource_path)
+
 # Compile and register resources before importing any UI components
 resource_filename = meld.conf.APPLICATION_ID + ".gresource" if 'meld.conf' in sys.modules else "org.gnome.Meld.gresource"
 resource_file = os.path.join(meld.conf.DATADIR, resource_filename) if 'meld.conf' in sys.modules else os.path.join(melddir, "data", resource_filename)

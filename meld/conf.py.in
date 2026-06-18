@@ -70,8 +70,8 @@ def uninstalled():
     LOCALEDIR = melddir / "build" / "mo"
     DATADIR_IS_UNINSTALLED = True
 
-    resource_path = melddir / "meld" / "resources"
-    os.environ['G_RESOURCE_OVERLAYS'] = f'{RESOURCE_BASE}={resource_path}'
+    # G_RESOURCE_OVERLAYS is set later in setup_resources() so that the
+    # GLib log silencer is already active when the overlay is processed.
 
 
 def setup_macos_application_bundle():

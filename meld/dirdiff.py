@@ -950,12 +950,12 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
     def _sync_vscroll(self, adjustment):
         adjs = [sw.get_vadjustment() for sw in self.scrolledwindow]
         self._do_to_others(
-            adjustment, adjs, "set_value", (int(adjustment.get_value()),))
+            adjustment, adjs, "set_value", (adjustment.get_value(),))
 
     def _sync_hscroll(self, adjustment):
         adjs = [sw.get_hadjustment() for sw in self.scrolledwindow]
         self._do_to_others(
-            adjustment, adjs, "set_value", (int(adjustment.get_value()),))
+            adjustment, adjs, "set_value", (adjustment.get_value(),))
 
     def _get_focused_pane(self):
         for i, treeview in enumerate(self.treeview):
@@ -2059,8 +2059,10 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             widget.hide()
 
         # Hide vertical scrollbar on all but the last visible pane;
-        # scrolling is synchronized across panes via adjustments.
+        # scrolling is synchronized across panes via a shared adjustment.
+        shared_vadj = self.scrolledwindow[0].get_vadjustment()
         for i, sw in enumerate(self.scrolledwindow[:num_panes]):
+            sw.set_vadjustment(shared_vadj)
             vbar = sw.get_vscrollbar()
             if vbar:
                 vbar.set_visible(i == num_panes - 1)

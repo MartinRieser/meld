@@ -301,6 +301,14 @@ def setup_resources():
         if not uninstalled:
             raise
 
+    # Set up resource overlay for uninstalled runs so that source .ui files
+    # are used directly. This is done after resource registration so the
+    # GLib log silencer is active when GLib processes the overlay.
+    if uninstalled:
+        resource_path = os.path.join(melddir, "meld", "resources")
+        os.environ['G_RESOURCE_OVERLAYS'] = '{}={}'.format(
+            meld.conf.RESOURCE_BASE, resource_path)
+
     style_path = os.path.join(meld.conf.DATADIR, "styles")
     GtkSource.StyleSchemeManager.get_default().append_search_path(style_path)
 
@@ -404,7 +412,7 @@ def setup_glib_logging():
     def silence(message):
         if "Drawing a gadget with negative dimensions" in message:
             return True
-        if "resource overlay" in message:
+        if "resource" in message.lower() and "overlay" in message.lower():
             return True
         if "has no property named 'layout-style'" in message:
             return True
