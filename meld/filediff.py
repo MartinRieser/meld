@@ -464,6 +464,8 @@ class FileDiff(Gtk.Box, MeldDoc):
         self.set_num_panes(num_panes)
         self.cursor = CursorDetails()
         for t in self.textview:
+            t.connect("focus-in-event", self.on_textview_focus_in_event)
+            t.connect("focus-out-event", self.on_textview_focus_out_event)
             t.connect("focus-in-event", self.on_current_diff_changed)
             t.connect("focus-out-event", self.on_current_diff_changed)
             t.connect(
@@ -817,7 +819,13 @@ class FileDiff(Gtk.Box, MeldDoc):
                 continue
             buf = self.textbuffer[pane]
             it = buf.get_iter_at_line(start)
-            self.textview[pane].scroll_to_iter(it, tolerance, True, 0.5, 0.5)
+            # GTK4's scroll_to_iter is unreliable (text may not be validated
+            # yet), so use scroll_to_mark with a temporary mark that is
+            # cleaned up after the deferred scroll completes.
+            mark = buf.create_mark(None, it, True)
+            self.textview[pane].scroll_to_mark(
+                mark, tolerance, True, 0.5, 0.5)
+            GLib.idle_add(lambda m=mark, b=buf: b.delete_mark(m) or False)
 
     def go_to_chunk(self, target, pane=None, centered=False):
         if target is None:
@@ -1993,6 +2001,11 @@ class FileDiff(Gtk.Box, MeldDoc):
             yield i
         focus_pane = 0 if self.num_panes < 2 else 1
         self.textview[focus_pane].grab_focus()
+        # In GTK4, grab_focus() may not immediately trigger the focus
+        # controller, so manually initialise the cursor/pane state to
+        # ensure the next/previous-change actions work right away.
+        self.on_textview_focus_in_event(
+            self.textview[focus_pane], None)
 
         if self.comparison_mode == FileComparisonMode.AutoMerge:
             if not self.linediffer.unresolved:

@@ -131,18 +131,21 @@ def compat_get_iter_at_line_offset(self, line, char_offset):
 Gtk.TextBuffer.get_iter_at_line_offset = compat_get_iter_at_line_offset
 
 
-# Gtk.TextView.scroll_to_iter was removed in GTK 4; emulate via scroll_to_mark
-if not hasattr(Gtk.TextView, "scroll_to_iter"):
+# Gtk.TextView.scroll_to_iter is deprecated in GTK 4 and unreliable (the
+# text layout may not be validated yet, so it silently fails to scroll).
+# Always replace it with a scroll_to_mark-based implementation. The mark
+# must persist until the deferred scroll completes, so we clean it up in
+# an idle callback.
+def compat_scroll_to_iter(
+    self, iter_, within_margin, use_align, xalign, yalign
+):
+    buf = self.get_buffer()
+    mark = buf.create_mark(None, iter_, True)
+    self.scroll_to_mark(mark, within_margin, use_align, xalign, yalign)
+    GLib.idle_add(lambda: buf.delete_mark(mark) or False)
 
-    def compat_scroll_to_iter(
-        self, iter_, within_margin, use_align, xalign, yalign
-    ):
-        buf = self.get_buffer()
-        mark = buf.create_mark(None, iter_, True)
-        self.scroll_to_mark(mark, within_margin, use_align, xalign, yalign)
-        buf.delete_mark(mark)
 
-    Gtk.TextView.scroll_to_iter = compat_scroll_to_iter
+Gtk.TextView.scroll_to_iter = compat_scroll_to_iter
 
 
 original_accelerator_parse = Gtk.accelerator_parse

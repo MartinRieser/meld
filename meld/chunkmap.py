@@ -19,7 +19,7 @@ import math
 from typing import Any, List, Mapping, Tuple
 
 import cairo
-from gi.repository import Gdk, GObject, Gtk
+from gi.repository import Gdk, GLib, GObject, Gtk
 
 from meld.settings import get_meld_settings
 from meld.style import get_common_theme
@@ -359,7 +359,10 @@ class TextViewChunkMap(ChunkMap):
 
         _, it = self.textview.get_iter_at_location(0, location)
         if animate:
-            self.textview.scroll_to_iter(it, 0.0, True, 1.0, 0.5)
+            buf = self.textview.get_buffer()
+            mark = buf.create_mark(None, it, True)
+            self.textview.scroll_to_mark(mark, 0.0, True, 1.0, 0.5)
+            GLib.idle_add(lambda: buf.delete_mark(mark) or False)
         else:
             # TODO: Add handling for centreing adjustment like we do
             # for animated scroll above.

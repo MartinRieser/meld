@@ -93,9 +93,9 @@ class FindBar(Gtk.Grid):
         )
         style_context = self.find_entry.get_style_context()
         if no_matches:
-            style_context.add_class(Gtk.STYLE_CLASS_ERROR)
+            style_context.add_class('error')
         else:
-            style_context.remove_class(Gtk.STYLE_CLASS_ERROR)
+            style_context.remove_class('error')
 
     def set_text_view(self, textview):
         self.textview = textview
