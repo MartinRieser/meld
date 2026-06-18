@@ -81,10 +81,9 @@
       <action-widget response="0">button7</action-widget>
     </action-widgets>
     <child internal-child="action_area">
-      <object class="GtkButtonBox" id="dialog-action_area">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="layout_style">end</property>
+      <object class="GtkBox" id="dialog-action_area">
+        <property name="spacing">6</property>
+        <property name="halign">end</property>
         <child>
           <object class="GtkButton" id="button1">
             <property name="label" translatable="1">Copy to Clipboard</property>

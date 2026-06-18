@@ -145,10 +145,9 @@
       <action-widget response="-5">okbutton1</action-widget>
     </action-widgets>
     <child internal-child="action_area">
-      <object class="GtkButtonBox" id="dialog-action_area1">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="layout_style">end</property>
+      <object class="GtkBox" id="dialog-action_area1">
+        <property name="spacing">6</property>
+        <property name="halign">end</property>
         <child>
           <object class="GtkButton" id="cancelbutton1">
             <property name="label" translatable="1">_Cancel</property>

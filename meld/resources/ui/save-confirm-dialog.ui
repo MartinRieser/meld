@@ -4,63 +4,44 @@
   <object class="GtkMessageDialog" id="save-confirm-dialog">
     <property name="message_type">warning</property>
     <property name="text" translatable="1">Save changes to documents before closing?</property>
-    <property name="secondary_text" translatable="1">If you don’t save, changes will be permanently lost.</property>
-    <child internal-child="vbox">
-      <object class="GtkBox" id="dialog-vbox1">
-        <property name="orientation">vertical</property>
-        <property name="spacing">6</property>
-        <child internal-child="action_area">
-          <object class="GtkButtonBox" id="dialog-action_area1">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="layout_style">expand</property>
-            <child>
-              <object class="GtkButton" id="close_button">
-                <property name="label" translatable="1">Close _without Saving</property>
-                <property name="focusable">1</property>
-                <property name="receives_default">1</property>
-                <property name="use_underline">1</property>
-                <style>
-                  <class name="destructive-action"/>
-                </style>
-              </object></child>
-            <child>
-              <object class="GtkButton" id="cancel_button">
-                <property name="label" translatable="1">_Cancel</property>
-                <property name="focusable">1</property>
-                <property name="receives_default">1</property>
-                <property name="use_underline">1</property>
-              </object></child>
-            <child>
-              <object class="GtkButton" id="save_button">
-                <property name="label" translatable="1">_Save</property>
-                <property name="focusable">1</property>
-                <property name="receives_default">1</property>
-                <property name="use_underline">1</property>
-              </object></child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkBox" id="extra_vbox">
-            <property name="vexpand">1</property>
-            <property name="orientation">vertical</property>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-          </object>
-        </child>
-      </object>
-    </child>
+    <property name="secondary_text" translatable="1">If you don't save, changes will be permanently lost.</property>
     <action-widgets>
       <action-widget response="-7">close_button</action-widget>
       <action-widget response="-6">cancel_button</action-widget>
       <action-widget response="-5">save_button</action-widget>
     </action-widgets>
+    <child internal-child="action_area">
+      <object class="GtkBox" id="dialog-action_area1">
+        <property name="spacing">6</property>
+        <property name="halign">end</property>
+        <child>
+          <object class="GtkButton" id="close_button">
+            <property name="label" translatable="1">Close _without Saving</property>
+            <property name="focusable">1</property>
+            <property name="receives_default">1</property>
+            <property name="use_underline">1</property>
+            <style>
+              <class name="destructive-action"/>
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="cancel_button">
+            <property name="label" translatable="1">_Cancel</property>
+            <property name="focusable">1</property>
+            <property name="receives_default">1</property>
+            <property name="use_underline">1</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="save_button">
+            <property name="label" translatable="1">_Save</property>
+            <property name="focusable">1</property>
+            <property name="receives_default">1</property>
+            <property name="use_underline">1</property>
+          </object>
+        </child>
+      </object>
+    </child>
   </object>
 </interface>
