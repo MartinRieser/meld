@@ -247,7 +247,6 @@ class ChunkMap(Gtk.DrawingArea):
         y: float,
     ) -> None:
         self._scroll_fraction(y)
-        self.grab_add()
         self._have_grab = True
 
     def button_release_event(
@@ -257,7 +256,6 @@ class ChunkMap(Gtk.DrawingArea):
         x: float,
         y: float,
     ) -> None:
-        self.grab_remove()
         self._have_grab = False
 
     def motion_event(
