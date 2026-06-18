@@ -408,6 +408,8 @@ def setup_glib_logging():
             return True
         if "has no property named 'layout-style'" in message:
             return True
+        if "without a current allocation" in message:
+            return True
         return False
 
     # This logging handler is for "old" glib logging using a simple
