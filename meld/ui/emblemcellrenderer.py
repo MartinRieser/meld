@@ -18,7 +18,7 @@ import logging
 from typing import Dict, Tuple
 
 import cairo
-from gi.repository import Gdk, GdkPixbuf, GLib, GObject, Gtk
+from gi.repository import Gdk, GdkPixbuf, GLib, GObject, Graphene, Gtk
 
 log = logging.getLogger(__name__)
 
@@ -75,53 +75,38 @@ class EmblemCellRenderer(Gtk.CellRenderer):
 
         return self.icon_cache[(name, size)]
 
-    def do_render(self, context, widget, background_area, cell_area, flags):
-        context.save()
-        try:
-            context.translate(cell_area.x, cell_area.y)
-            context.rectangle(0, 0, cell_area.width, cell_area.height)
-            context.clip()
+    def do_snapshot(self, snapshot, widget, background_area, cell_area, flags):
+        rect = Graphene.Rect.alloc()
+        rect.init(cell_area.x, cell_area.y, cell_area.width, cell_area.height)
+        context = snapshot.append_cairo(rect)
 
-            # TODO: Incorporate padding
-            context.push_group()
-            pixbuf = self._get_pixbuf(self.icon_name, self._icon_size)
-            if pixbuf:
-                context.set_operator(cairo.OPERATOR_SOURCE)
-                # Assumes square icons; may break if we don't get the requested
-                # size
-                height_offset = int((cell_area.height - pixbuf.get_height()) / 2)
-                Gdk.cairo_set_source_pixbuf(context, pixbuf, 0, height_offset)
-                context.rectangle(0, height_offset,
-                                  pixbuf.get_width(), pixbuf.get_height())
-                context.fill()
+        pixbuf = self._get_pixbuf(self.icon_name, self._icon_size)
+        if pixbuf:
+            context.set_operator(cairo.OPERATOR_SOURCE)
+            height_offset = int((cell_area.height - pixbuf.get_height()) / 2)
+            Gdk.cairo_set_source_pixbuf(context, pixbuf, 0, height_offset)
+            context.rectangle(0, height_offset,
+                              pixbuf.get_width(), pixbuf.get_height())
+            context.fill()
 
-                if self.icon_tint:
-                    c = self.icon_tint
-                    r, g, b = c.red, c.green, c.blue
-                    # Figure out the difference between our tint colour and an
-                    # empirically determined (i.e., guessed) satisfying luma and
-                    # adjust the base colours accordingly
-                    luma = (r + r + b + g + g + g) / 6.
-                    extra_luma = (1.2 - luma) / 3.
-                    r, g, b = [min(x + extra_luma, 1.) for x in (r, g, b)]
-                    context.set_source_rgba(r, g, b, 0.4)
-                    context.set_operator(cairo.OPERATOR_ATOP)
-                    context.paint()
+            if self.icon_tint:
+                c = self.icon_tint
+                r, g, b = c.red, c.green, c.blue
+                luma = (r + r + b + g + g + g) / 6.
+                extra_luma = (1.2 - luma) / 3.
+                r, g, b = [min(x + extra_luma, 1.) for x in (r, g, b)]
+                context.set_source_rgba(r, g, b, 0.4)
+                context.set_operator(cairo.OPERATOR_ATOP)
+                context.paint()
 
-                if self.emblem_name:
-                    pixbuf = self._get_pixbuf(self.emblem_name, self._emblem_size)
-                    if pixbuf:
-                        x_offset = self._icon_size - self._emblem_size
-                        context.set_operator(cairo.OPERATOR_OVER)
-                        Gdk.cairo_set_source_pixbuf(context, pixbuf, x_offset, 0)
-                        context.rectangle(x_offset, 0, cell_area.width, self._emblem_size)
-                        context.fill()
-
-            context.pop_group_to_source()
-            context.set_operator(cairo.OPERATOR_OVER)
-            context.paint()
-        finally:
-            context.restore()
+            if self.emblem_name:
+                pixbuf = self._get_pixbuf(self.emblem_name, self._emblem_size)
+                if pixbuf:
+                    x_offset = self._icon_size - self._emblem_size
+                    context.set_operator(cairo.OPERATOR_OVER)
+                    Gdk.cairo_set_source_pixbuf(context, pixbuf, x_offset, 0)
+                    context.rectangle(x_offset, 0, cell_area.width, self._emblem_size)
+                    context.fill()
 
     def do_get_preferred_width(self, widget):
         return (self._icon_size, self._icon_size)

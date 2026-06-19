@@ -2551,7 +2551,7 @@ class FileDiff(Gtk.Box, MeldDoc):
         dialog = builder.get_object('revert_dialog')
         dialog.set_transient_for(self.get_toplevel())
 
-        filelist = Gtk.Label("\n".join(["\t• " + f for f in unsaved]))
+        filelist = Gtk.Label(label="\n".join(["\t• " + f for f in unsaved]))
         filelist.props.xalign = 0.0
         filelist.show()
         message_area = dialog.get_message_area()
