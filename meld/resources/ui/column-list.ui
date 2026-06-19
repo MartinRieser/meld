@@ -62,7 +62,6 @@
         </style>
         <child>
           <object class="GtkButton" id="remove">
-            <property name="use_action_appearance">False</property>
             <property name="label" translatable="1">_Remove</property>
             <property name="use_underline">1</property>
             <property name="icon_name">list-remove</property>
@@ -71,7 +70,6 @@
         <child>
           <object class="GtkButton" id="move_up">
             <property name="tooltip_text" translatable="1">Move item up</property>
-            <property name="use_action_appearance">False</property>
             <property name="label" translatable="1">Move _Up</property>
             <property name="use_underline">1</property>
             <property name="icon_name">go-up-symbolic</property>
@@ -81,7 +79,6 @@
         <child>
           <object class="GtkButton" id="move_down">
             <property name="tooltip_text" translatable="1">Move item down</property>
-            <property name="use_action_appearance">False</property>
             <property name="label" translatable="1">Move _Down</property>
             <property name="use_underline">1</property>
             <property name="icon_name">go-down-symbolic</property>

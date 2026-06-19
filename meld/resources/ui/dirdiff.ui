@@ -21,8 +21,7 @@
                 </style>
                 <child>
                   <object class="MeldFileButton" id="folder_open_button0">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="focusable">False</property>
                     <property name="pane">0</property>
                     <property name="action">GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER</property>
                     <property name="dialog_label" translatable="1">Select Folder</property>
@@ -32,8 +31,7 @@
                 </child>
                 <child>
                   <object class="PathLabel" id="folder_label0">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="focusable">False</property>
                     <property name="label" translatable="1">Folder 1</property>
                   </object>
                 </child>
@@ -57,8 +55,7 @@
                 </style>
                 <child>
                   <object class="MeldFileButton" id="folder_open_button1">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="focusable">False</property>
                     <property name="pane">1</property>
                     <property name="action">GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER</property>
                     <property name="dialog_label" translatable="1">Select Folder</property>
@@ -68,8 +65,7 @@
                 </child>
                 <child>
                   <object class="PathLabel" id="folder_label1">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="focusable">False</property>
                     <property name="label" translatable="1">Folder 2</property>
                   </object>
                 </child>
@@ -93,8 +89,7 @@
                 </style>
                 <child>
                   <object class="MeldFileButton" id="folder_open_button2">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="focusable">False</property>
                     <property name="pane">2</property>
                     <property name="action">GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER</property>
                     <property name="dialog_label" translatable="1">Select Folder</property>
@@ -104,8 +99,7 @@
                 </child>
                 <child>
                   <object class="PathLabel" id="folder_label2">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="focusable">False</property>
                     <property name="label" translatable="1">Folder 3</property>
                   </object>
                 </child>
@@ -134,8 +128,7 @@
         <child>
           <object class="ScrollLinkMap" id="linkmap1">
             <property name="width_request">50</property>
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
+            <property name="focusable">False</property>
 
             <property name="vexpand">True</property><layout>
               <property name="column">3</property>
@@ -157,8 +150,7 @@
         <child>
           <object class="ScrollLinkMap" id="linkmap0">
             <property name="width_request">50</property>
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
+            <property name="focusable">False</property>
 
             <property name="vexpand">True</property><layout>
               <property name="column">1</property>
@@ -176,8 +168,7 @@
             </layout>
             <child>
               <object class="MsgAreaController" id="msgarea_mgr0">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
+                <property name="focusable">False</property>
                 <child>
                   <placeholder/>
                 </child>
@@ -213,8 +204,7 @@
             </layout>
             <child>
               <object class="MsgAreaController" id="msgarea_mgr1">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
+                <property name="focusable">False</property>
                 <child>
                   <placeholder/>
                 </child>
@@ -250,8 +240,7 @@
             </layout>
             <child>
               <object class="MsgAreaController" id="msgarea_mgr2">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
+                <property name="focusable">False</property>
                 <child>
                   <placeholder/>
                 </child>
@@ -290,7 +279,6 @@
                 </style>
                 <child>
                   <object class="TreeViewChunkMap" id="chunkmap0">
-                    <property name="visible">True</property>
                     <property name="width_request">15</property>
                     <property name="adjustment">pane_adjustment0</property>
                     <property name="treeview">treeview0</property>
@@ -299,7 +287,6 @@
                 </child>
                 <child>
                   <object class="TreeViewChunkMap" id="chunkmap1">
-                    <property name="visible">True</property>
                     <property name="width_request">15</property>
                     <property name="adjustment">pane_adjustment1</property>
                     <property name="treeview">treeview1</property>
@@ -308,7 +295,6 @@
                 </child>
                 <child>
                   <object class="TreeViewChunkMap" id="chunkmap2">
-                    <property name="visible">True</property>
                     <property name="width_request">15</property>
                     <property name="adjustment">pane_adjustment2</property>
                     <property name="treeview">treeview2</property>

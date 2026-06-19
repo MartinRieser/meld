@@ -133,8 +133,7 @@ class MeldApp(Gtk.Application):
             uri = "https://meld.app/help/"
         else:
             uri = "help:meld"
-        Gtk.show_uri(
-            Gdk.Screen.get_default(), uri, Gtk.get_current_event_time())
+        Gtk.show_uri(self.get_active_window(), uri, Gdk.CURRENT_TIME)
 
     def about_callback(self, action, parameter):
         builder = Gtk.Builder.new_from_resource(
@@ -148,8 +147,7 @@ class MeldApp(Gtk.Application):
 
     def quit_callback(self, action, parameter):
         for window in self.get_windows():
-            cancelled = window.emit(
-                "delete-event", Gdk.Event.new(Gdk.EventType.DELETE))
+            cancelled = window.emit("close-request")
             if cancelled:
                 return
             window.destroy()

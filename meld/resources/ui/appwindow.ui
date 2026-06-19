@@ -160,7 +160,6 @@
         </child>
         <child type="end">
           <object class="GtkSpinner" id="spinner">
-            <property name="visible">0</property>
           </object>
         </child>
       </object>
@@ -171,11 +170,8 @@
         <child>
           <object class="MeldNotebook" id="notebook">
             <property name="vexpand">1</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="focusable">True</property>
             <property name="scrollable">True</property>
-            <property name="enable_popup">False</property>
-            <property name="show_border">False</property>
             <signal name="switch-page" handler="on_switch_page" swapped="no"/>
             <signal name="switch-page" handler="after_switch_page" after="yes" swapped="no"/>
           </object>
@@ -189,8 +185,7 @@
     <property name="height-request">500</property>
     <child>
       <object class="RecentSelector" id="recent_selector">
-        <property name="visible">True</property>
-        <property name="can_focus">True</property>
+        <property name="focusable">True</property>
         <signal name="open-recent" handler="on_open_recent" swapped="no"/>
       </object>
     </child>

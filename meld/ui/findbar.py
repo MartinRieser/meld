@@ -79,6 +79,7 @@ class FindBar(Gtk.Grid):
         shortcut = Gtk.Shortcut.new(trigger, action)
         controller.add_shortcut(shortcut)
         self.add_controller(controller)
+        self.wrap_box.set_visible(False)
 
     def hide(self):
         self.set_text_view(None)

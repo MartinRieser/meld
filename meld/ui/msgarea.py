@@ -92,7 +92,7 @@ class MsgAreaController(Gtk.Box):
     def clear(self):
         if self.__msgarea is not None:
             self.remove(self.__msgarea)
-            self.__msgarea.destroy()
+            self.__msgarea.unparent()
             self.__msgarea = None
         self.__msgid = None
 

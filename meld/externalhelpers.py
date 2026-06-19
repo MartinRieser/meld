@@ -67,11 +67,7 @@ def launch_with_default_handler(gfile: Gio.File) -> None:
         else:  # sys.platform == "darwin"
             subprocess.Popen(["open", path])
     else:
-        Gtk.show_uri(
-            Gdk.Screen.get_default(),
-            gfile.get_uri(),
-            Gtk.get_current_event_time(),
-        )
+        Gtk.show_uri(None, gfile.get_uri(), Gdk.CURRENT_TIME)
 
 
 def open_cb(

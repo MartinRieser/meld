@@ -925,9 +925,8 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         clear_action = Gtk.MenuItem.new_with_label(_("Clear"))
         clear_action.connect(
             "activate", lambda *args: buf.delete(*buf.get_bounds()))
-        menu.insert(clear_action, 0)
-        menu.insert(Gtk.SeparatorMenuItem(), 1)
-        menu.show_all()
+        menu.append(clear_action)
+        menu.append(Gtk.SeparatorMenuItem())
 
     @Gtk.Template.Callback()
     def on_treeview_popup_menu(self, treeview):

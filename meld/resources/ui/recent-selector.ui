@@ -18,8 +18,7 @@
     </child>
     <child>
       <object class="GtkRecentChooserWidget" id="recent_chooser">
-        <property name="visible">True</property>
-        <property name="can_focus">True</property>
+        <property name="focusable">True</property>
         <property name="hexpand">True</property>
         <property name="show_icons">False</property>
         <property name="show_not_found">False</property>

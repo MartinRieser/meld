@@ -154,11 +154,9 @@ class GutterRendererChunkLines(GtkSource.GutterRendererText, MeldGutterRenderer)
         self.get_view().connect("style-updated", self.on_view_style_updated)
 
     def on_view_style_updated(self, view: GtkSource.View) -> None:
-        stylecontext = view.get_style_context()
-        # We should be using stylecontext.get_property, but it doesn't work
-        # for reasons that according to the GTK code are "Yuck".
-        font = stylecontext.get_font(stylecontext.get_state())
-        font_string = font.to_string()
+        layout = view.create_pango_layout()
+        font = layout.get_font_description()
+        font_string = font.to_string() if font else ""
         need_recalculate = font_string != self.font_string
 
         buf = self.get_view().get_buffer()

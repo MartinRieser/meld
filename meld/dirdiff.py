@@ -1427,7 +1427,7 @@ class DirDiff(Gtk.Box, tree.TreeviewCommon, MeldDoc):
                             (_("_Cancel"), Gtk.ResponseType.CANCEL, None),
                             (
                                 _("_Replace"), Gtk.ResponseType.OK,
-                                Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION,
+                                "destructive-action",
                             ),
                         ]
                         replace = misc.modal_dialog(

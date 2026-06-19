@@ -310,8 +310,7 @@ class MeldWindow(Gtk.ApplicationWindow):
         if not self.has_pages():
             self.on_switch_page(self.notebook, page, -1)
             if self.should_close:
-                cancelled = self.emit(
-                    'delete-event', Gdk.Event.new(Gdk.EventType.DELETE))
+                cancelled = self.emit("close-request")
                 if not cancelled:
                     self.destroy()
 

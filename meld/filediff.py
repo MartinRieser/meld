@@ -552,7 +552,7 @@ class FileDiff(Gtk.Box, MeldDoc):
         self.connect("notify::editable-readonly", self.on_editable_readonly_changed)
 
     def do_realize(self):
-        Gtk.Box().do_realize(self)
+        Gtk.Box.do_realize(self)
 
         builder = Gtk.Builder.new_from_resource(
             '/org/gnome/meld/ui/filediff-menus.ui')

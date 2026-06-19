@@ -102,7 +102,7 @@ def trash_or_confirm(gfile: Gio.File) -> bool:
             (_("_Cancel"), Gtk.ResponseType.CANCEL, None),
             (
                 _("_Delete Permanently"), Gtk.ResponseType.OK,
-                Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION,
+                "destructive-action",
             ),
         ],
     )

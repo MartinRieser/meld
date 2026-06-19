@@ -123,9 +123,8 @@ class EmblemCellRenderer(Gtk.CellRenderer):
         finally:
             context.restore()
 
-    def do_get_size(self, widget, cell_area):
-        # TODO: Account for cell_area if we have alignment set
-        x_offset, y_offset = 0, 0
-        width, height = self._icon_size, self._icon_size
-        # TODO: Account for padding
-        return (x_offset, y_offset, width, height)
+    def do_get_preferred_width(self, widget):
+        return (self._icon_size, self._icon_size)
+
+    def do_get_preferred_height(self, widget):
+        return (self._icon_size, self._icon_size)

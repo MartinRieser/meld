@@ -2,8 +2,7 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <template class="NewDiffTab" parent="GtkBox">
-    <property name="visible">True</property>
-    <property name="can-focus">False</property>
+    <property name="focusable">False</property>
     <property name="halign">center</property>
     <property name="valign">center</property>
     <property name="margin-start">24</property>
@@ -223,8 +222,7 @@
                         </child>
                         <child>
                           <object class="MeldFileButton" id="file_chooser0">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="focusable">False</property>
                             <property name="pane">0</property>
                             <property name="action">GTK_FILE_CHOOSER_ACTION_OPEN</property>
                             <property name="local-only">False</property>
@@ -238,8 +236,7 @@
                         </child>
                         <child>
                           <object class="MeldFileButton" id="file_chooser1">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="focusable">False</property>
                             <property name="pane">1</property>
                             <property name="action">GTK_FILE_CHOOSER_ACTION_OPEN</property>
                             <property name="local-only">False</property>
@@ -253,9 +250,8 @@
                         </child>
                         <child>
                           <object class="MeldFileButton" id="file_chooser2">
-                            <property name="visible">True</property>
                             <property name="sensitive">False</property>
-                            <property name="can-focus">False</property>
+                            <property name="focusable">False</property>
                             <property name="pane">2</property>
                             <property name="action">GTK_FILE_CHOOSER_ACTION_OPEN</property>
                             <property name="local-only">False</property>
@@ -334,8 +330,7 @@
                         </child>
                         <child>
                           <object class="MeldFileButton" id="dir_chooser0">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="focusable">False</property>
                             <property name="pane">0</property>
                             <property name="action">GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER</property>
                             <property name="dialog_label" translatable="1">Select First Folder</property>
@@ -348,8 +343,7 @@
                         </child>
                         <child>
                           <object class="MeldFileButton" id="dir_chooser1">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="focusable">False</property>
                             <property name="pane">1</property>
                             <property name="action">GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER</property>
                             <property name="dialog_label" translatable="1">Select Second Folder</property>
@@ -362,9 +356,8 @@
                         </child>
                         <child>
                           <object class="MeldFileButton" id="dir_chooser2">
-                            <property name="visible">True</property>
                             <property name="sensitive">False</property>
-                            <property name="can-focus">False</property>
+                            <property name="focusable">False</property>
                             <property name="pane">2</property>
                             <property name="action">GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER</property>
                             <property name="dialog_label" translatable="1">Select Third Folder</property>
@@ -416,8 +409,7 @@
                         </child>
                         <child>
                           <object class="MeldFileButton" id="vc_chooser0">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="focusable">False</property>
                             <property name="pane">0</property>
                             <property name="action">GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER</property>
                             <property name="dialog_label" translatable="1">Select A Version-Controlled Folder</property>

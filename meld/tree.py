@@ -257,7 +257,7 @@ class TreeviewCommon:
             cursor_path, treeview.get_column(0))
 
         self.popup_menu.popup_at_rect(
-            treeview.get_bin_window(),
+            treeview,
             rect,
             Gdk.Gravity.SOUTH_EAST,
             Gdk.Gravity.NORTH_WEST,

@@ -752,6 +752,7 @@ def compat_widget_connect(self, signal, callback, *args, **kwargs):
         "draw",
         "focus-in-event",
         "focus-out-event",
+        "size-allocate",
     }
     if signal in compat_signals:
         attach_compat_controllers(self)
@@ -927,6 +928,7 @@ class CompatMenuItem(Gtk.Button):
 
 
 Gtk.MenuItem = CompatMenuItem
+Gtk.SeparatorMenuItem = Gtk.Separator
 
 
 # Menu compat class
@@ -1002,7 +1004,11 @@ class CompatMenu(Gtk.Popover):
         return PopoverMenuWrapper(Gtk.PopoverMenu.new_from_model(model))
 
     def append(self, child):
-        child.connect("clicked", lambda *args: self.popdown())
+        if hasattr(child, 'connect'):
+            try:
+                child.connect("clicked", lambda *args: self.popdown())
+            except TypeError:
+                pass
         self.box.append(child)
 
     def show_all(self):
@@ -1170,6 +1176,9 @@ class CompatClipboard:
         self.gdk_clipboard.read_text_async(None, on_read_done)
 
     def set_can_store(self, targets):
+        pass
+
+    def store(self):
         pass
 
 

@@ -514,8 +514,12 @@ class MeldSourceMap(GtkSource.Map, SourceViewHelperMixin):
 
         return GtkSource.Map.do_draw_layer(self, layer, context)
 
-    def do_get_preferred_width(self):
-        if self.props.compact_view:
-            return (self.COMPACT_MODE_WIDTH, self.COMPACT_MODE_WIDTH)
-        else:
-            return GtkSource.Map.do_get_preferred_width(self)
+    def do_measure(self, orientation, for_size):
+        if orientation == Gtk.Orientation.HORIZONTAL:
+            if self.props.compact_view:
+                return (self.COMPACT_MODE_WIDTH, self.COMPACT_MODE_WIDTH, -1, -1)
+            else:
+                min_w, nat_w = GtkSource.Map.do_measure(
+                    self, orientation, for_size)[:2]
+                return (min_w, nat_w, -1, -1)
+        return GtkSource.Map.do_measure(self, orientation, for_size)
