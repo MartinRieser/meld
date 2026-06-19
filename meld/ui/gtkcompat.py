@@ -665,7 +665,7 @@ def attach_compat_controllers(widget):
     focus_ctrl.connect("leave", on_focus_leave)
     widget.add_controller(focus_ctrl)
 
-    # Window close request and size-allocate
+    # Window close request bridge: emit GTK3-style "delete-event"
     if isinstance(widget, Gtk.Window):
 
         def on_close_request(window):
@@ -673,20 +673,6 @@ def attach_compat_controllers(widget):
             return bool(safe_emit(window, "delete-event", ev))
 
         widget.connect("close-request", on_close_request)
-
-        def on_size_notify(window, pspec):
-            class MockAllocation:
-                def __init__(self, w, h):
-                    self.x = 0
-                    self.y = 0
-                    self.width = w
-                    self.height = h
-
-            alloc = MockAllocation(window.get_width(), window.get_height())
-            safe_emit(window, "size-allocate", alloc)
-
-        widget.connect("notify::default-width", on_size_notify)
-        widget.connect("notify::default-height", on_size_notify)
 
 
 # Gtk.DestDefaults emulation
@@ -820,11 +806,6 @@ def custom_new(cls, name, bases, dct):
                 GObject.SignalFlags.RUN_LAST,
                 GObject.TYPE_NONE,
                 (object, int, int, object, int, int),
-            ),
-            "size-allocate": (
-                GObject.SignalFlags.RUN_LAST,
-                GObject.TYPE_NONE,
-                (object,),
             ),
             "focus-in-event": (
                 GObject.SignalFlags.RUN_LAST,
