@@ -36,7 +36,8 @@ class SavedWindowState(GObject.GObject):
         type=bool, nick='Is window fullscreen', default=False)
 
     def bind(self, window):
-        window.connect('size-allocate', self.on_size_allocate)
+        window.connect('notify::default-width', self.on_size_changed)
+        window.connect('notify::default-height', self.on_size_changed)
         window.connect("notify::maximized", self.on_window_state_event)
         window.connect("notify::fullscreened", self.on_window_state_event)
 
@@ -55,12 +56,12 @@ class SavedWindowState(GObject.GObject):
         if self.props.is_maximized:
             window.maximize()
 
-    def on_size_allocate(self, window, allocation):
+    def on_size_changed(self, window, param):
         if not (self.props.is_maximized or self.props.is_fullscreen):
-            width, height = window.get_size()
-            if width != self.props.width:
+            width, height = window.get_default_size()
+            if width > 0 and width != self.props.width:
                 self.props.width = width
-            if height != self.props.height:
+            if height > 0 and height != self.props.height:
                 self.props.height = height
 
     def on_window_state_event(self, window, param):

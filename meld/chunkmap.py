@@ -99,9 +99,9 @@ class ChunkMap(Gtk.DrawingArea):
 
         return Gtk.DrawingArea.do_realize(self)
 
-    def do_size_allocate(self, *args):
+    def do_size_allocate(self, width, height, baseline):
         self._cached_map = None
-        return Gtk.DrawingArea.do_size_allocate(self, *args)
+        return Gtk.DrawingArea.do_size_allocate(self, width, height, baseline)
 
     def on_setting_changed(self, settings, key):
         if key == 'style-scheme':

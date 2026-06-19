@@ -752,7 +752,6 @@ def compat_widget_connect(self, signal, callback, *args, **kwargs):
         "draw",
         "focus-in-event",
         "focus-out-event",
-        "size-allocate",
     }
     if signal in compat_signals:
         attach_compat_controllers(self)
