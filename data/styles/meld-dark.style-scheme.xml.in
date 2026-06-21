@@ -3,18 +3,18 @@
   <description>Dark color scheme for Meld highlighting</description>
 
   <!-- Meld -->
-  <style name="meld:insert" background="#0f3d24" foreground="#34a853" line-background="#186338"/>
-  <style name="meld:replace" background="#0d3c61" foreground="#4285f4" line-background="#1a5c96"/>
-  <style name="meld:conflict" background="#541e1b" foreground="#ea4335" line-background="#822d28"/>
+  <style name="meld:insert" background="#123806" foreground="#4e6206" line-background="#245515"/>
+  <style name="meld:replace" background="#003266" foreground="#1d59d6" line-background="#0053a6"/>
+  <style name="meld:conflict" background="#7a2a28" foreground="#ff0000" line-background="#ac3b39"/>
   <!-- FIXME: delete background should be @theme_bg_color; line should be shaded of that -->
-  <style name="meld:delete" background="#2a2b2e" foreground="#9aa0a6" line-background="#3c4043"/>
-  <style name="meld:error" background="#5c4600" foreground="#fbbc04" line-background="#7d5f00"/>
-  <style name="meld:inline" background="#1d446c"/>
-  <style name="meld:current-line-highlight" foreground="#eeeeee" background="#rgba(66, 133, 244, 0.08)"/>
+  <style name="meld:delete" background="#ffffff" foreground="#a40000" line-background="#cccccc"/>
+  <style name="meld:error" background="#fce94f" foreground="#faad3d" line-background="#fdf8cd"/>
+  <style name="meld:inline" background="#24527e"/>
+  <style name="meld:current-line-highlight" foreground="#eeeeee" background="#rgba(17, 17, 0, 0.25)"/>
   <style name="meld:unknown-text" foreground="#aaaaaa"/>
   <style name="meld:syncpoint-outline" foreground="#bbbbbb"/>
-  <style name="meld:current-chunk-highlight" background="#rgba(66, 133, 244, 0.15)"/>
+  <style name="meld:current-chunk-highlight" background="#rgba(255, 255, 255, 0.06)"/>
   <style name="meld:dimmed" foreground="#999999"/>
-  <style name="meld:overscroll" background="#rgba(255, 255, 255, 0.05)"/>
-  <style name="map-overlay" background="#rgba(200, 200, 200, 0.2)"/>
+  <style name="meld:overscroll" background="#rgba(255, 255, 255, 0.1)"/>
+  <style name="map-overlay" background="#rgba(200, 200, 200, 0.4)"/>
 </style-scheme>

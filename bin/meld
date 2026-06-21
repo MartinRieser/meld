@@ -95,8 +95,7 @@ if uninstalled:
     meld.conf = mod
     sys.modules['meld.conf'] = mod
 
-import meld.ui.gtkcompat  # noqa: E402, I001
-import meld.conf  # noqa: E402, I001
+import meld.conf  # noqa: E402
 
 # Silence warnings on non-devel releases (minor version is divisible by 2)
 is_stable = not bool(int(meld.conf.__version__.split('.')[1]) % 2)
@@ -114,7 +113,7 @@ elif meld.conf.IS_WHEEL:
     meld.conf.setup_wheel()
 
 # TODO: Possibly move to elib.intl
-import gettext  # noqa: E402
+import gettext  # noqa: E402, I100
 
 locale_domain = meld.conf.__package__
 locale_dir = meld.conf.LOCALEDIR
@@ -149,21 +148,9 @@ try:
         libintl.textdomain(locale_domain)
         del libintl
     else:
-        try:
-            locale.bindtextdomain(locale_domain, str(locale_dir))
-            locale.bind_textdomain_codeset(locale_domain, 'UTF-8')
-            locale.textdomain(locale_domain)
-        except AttributeError:
-            import ctypes
-            import ctypes.util
-            libintl_path = ctypes.util.find_library('intl')
-            if libintl_path:
-                libintl = ctypes.cdll.LoadLibrary(libintl_path)
-                libintl.bindtextdomain(locale_domain, str(locale_dir))
-                libintl.bind_textdomain_codeset(locale_domain, 'UTF-8')
-                libintl.textdomain(locale_domain)
-            else:
-                raise
+        locale.bindtextdomain(locale_domain, str(locale_dir))
+        locale.bind_textdomain_codeset(locale_domain, 'UTF-8')
+        locale.textdomain(locale_domain)
 except AttributeError as e:
     # Python builds linked without libintl (i.e., OSX) don't have
     # bindtextdomain(), which causes Gtk.Builder translations to fail.
@@ -196,9 +183,12 @@ def show_error_and_exit(error_text):
     try:
         import gi
         gi.require_version("Gtk", "4.0")
-        from gi.repository import Gtk  # noqa: F401
-        # Under GTK 4, run() is removed. Just print to terminal and rely on tkinter.
-        print(error_text)
+        from gi.repository import Gtk
+        Gtk.MessageDialog(
+            message_type=Gtk.MessageType.ERROR,
+            buttons=Gtk.ButtonsType.CLOSE,
+            text=error_text,
+        ).run()
     except Exception:
         # tkinter is imported here only to show a UI warning about
         # missing dependencies.
@@ -238,7 +228,7 @@ def check_requirements():
                 module = self.module
 
             mod = importlib.import_module(module)
-            if mod.__name__ == 'gi.repository.Gtk':
+            if mod.__name__ in ("gi.repository.Gtk", "gi.repository.Adw"):
                 version = (mod.get_major_version(), mod.get_minor_version())
             elif mod.__name__ == 'gi.repository.GLib':
                 version = (mod.MAJOR_VERSION, mod.MINOR_VERSION)
@@ -260,12 +250,13 @@ def check_requirements():
     # These requirements are kept in both `bin/meld` and `meson.build`. If you
     # update one, update the other.
     requirements = (
-        Requirement('Python', 'sys', None, 3, 6),
-        Requirement('Gtk+', 'Gtk', '4.0', 4, 0),
-        Requirement('GLib', 'GLib', '2.0', 2, 48),
-        Requirement('GtkSourceView', 'GtkSource', '5', 5, 0),
-        Requirement('pygobject', 'gi', None, 3, 30),
-        Requirement('pycairo', 'cairo', None, 1, 15),
+        Requirement("Python", "sys", None, 3, 10),
+        Requirement("Gtk+", "Gtk", "4.0", 4, 12),
+        Requirement("GLib", "GLib", "2.0", 2, 80),
+        Requirement("GtkSourceView", "GtkSource", "5", 5, 0),
+        Requirement("Adwaita", "Adw", "1", 1, 6),
+        Requirement("pygobject", "gi", None, 3, 46),
+        Requirement("pycairo", "cairo", None, 1, 15),
     )
 
     try:
@@ -300,14 +291,6 @@ def setup_resources():
         # Allow resources to be missing when running uninstalled
         if not uninstalled:
             raise
-
-    # Set up resource overlay for uninstalled runs so that source .ui files
-    # are used directly. This is done after resource registration so the
-    # GLib log silencer is active when GLib processes the overlay.
-    if uninstalled:
-        resource_path = os.path.join(melddir, "meld", "resources")
-        os.environ['G_RESOURCE_OVERLAYS'] = '{}={}'.format(
-            meld.conf.RESOURCE_BASE, resource_path)
 
     style_path = os.path.join(meld.conf.DATADIR, "styles")
     GtkSource.StyleSchemeManager.get_default().append_search_path(style_path)
@@ -344,34 +327,27 @@ def setup_settings():
     meld.settings.create_settings()
 
 
+def setup_style():
+    import meld.style
+
+    meld.style.init_sourceview_style_context()
+
+
 def setup_logging():
     log = logging.getLogger()
 
-    debug_mode = "MELD_DEBUG" in os.environ or "--debug" in sys.argv
-
-    if debug_mode:
-        log.setLevel(logging.DEBUG)
-    elif uninstalled and devel:
+    # If we're running uninstalled and from Git, turn up the logging level
+    if uninstalled and devel:
         log.setLevel(logging.INFO)
     else:
         log.setLevel(logging.CRITICAL)
-
-    formatter = logging.Formatter("%(asctime)s %(levelname)s "
-                                  "%(name)s: %(message)s")
 
     if sys.platform == 'win32':
         from gi.repository import GLib
 
         log_path = os.path.join(GLib.get_user_data_dir(), "meld.log")
-        try:
-            handler = logging.FileHandler(log_path)
-            handler.setFormatter(formatter)
-            log.addHandler(handler)
-        except Exception:
-            pass
-
-        if not debug_mode:
-            log.setLevel(logging.INFO)
+        handler = logging.FileHandler(log_path)
+        log.setLevel(logging.INFO)
 
         # Set excepthook so that we get exceptions on Windows
         def logging_except_hook(exc_type, exc_instance, tb):
@@ -379,15 +355,13 @@ def setup_logging():
                 'Unhandled exception', exc_info=(exc_type, exc_instance, tb))
 
         sys.excepthook = logging_except_hook
+    else:
+        handler = logging.StreamHandler()
 
-    if debug_mode or sys.platform != 'win32':
-        stream_handler = logging.StreamHandler(sys.stderr)
-        stream_handler.setFormatter(formatter)
-        log.addHandler(stream_handler)
-        if debug_mode:
-            print("Meld Debug/Logging Mode Enabled", file=sys.stderr)
-            if sys.platform == 'win32':
-                print(f"File log path: {log_path}", file=sys.stderr)
+    formatter = logging.Formatter("%(asctime)s %(levelname)s "
+                                  "%(name)s: %(message)s")
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
 
 
 def setup_glib_logging():
@@ -412,11 +386,9 @@ def setup_glib_logging():
     def silence(message):
         if "Drawing a gadget with negative dimensions" in message:
             return True
-        if "resource" in message.lower() and "overlay" in message.lower():
+        if "resource overlay" in message:
             return True
-        if "has no property named 'layout-style'" in message:
-            return True
-        if "without a current allocation" in message:
+        if "Vulkan: Loader Message:" in message:
             return True
         return False
 
@@ -484,6 +456,7 @@ def environment_hacks():
 def ci_screenshot():
     # For CI, support screenshot-and-exit by setting envvars
 
+    import cairo
     from gi.repository import Gio, GLib, Gtk
 
     screenshot_filename = os.environ.get("MELD_SCREENSHOT_AND_EXIT")
@@ -492,34 +465,17 @@ def ci_screenshot():
 
     def take_screenshot():
         app = Gio.Application.get_default()
-        if not app:
-            return True
-        windows = app.get_windows()
-        if not windows:
-            return True
-        window = windows[0]
-        width = window.get_width()
-        height = window.get_height()
-        if width <= 0 or height <= 0:
-            w, h = window.get_default_size()
-            if w > 0:
-                width = w
-            if h > 0:
-                height = h
-        if width <= 0 or height <= 0:
-            width, height = 800, 600
+        window = app.get_windows()[0]
+        alloc = window.get_allocation()
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, alloc.width, alloc.height)
+        cr = cairo.Context(surface)
+        snapshot = Gtk.Snapshot.new()
         paintable = Gtk.WidgetPaintable.new(window)
-        snapshot = Gtk.Snapshot()
-        paintable.snapshot(snapshot, width, height)
-        node = snapshot.to_node()
-        native = window.get_native()
-        renderer = native.get_renderer() if native else None
-        texture = renderer.render_texture(node, None) if renderer and node else None
-        if texture:
-            texture.save_to_png(screenshot_filename)
-            print(f"Screenshot saved to {screenshot_filename}. Exiting.", file=sys.stderr, flush=True)
-            os._exit(0)
-        os._exit(1)
+        paintable.snapshot(snapshot, alloc.width, alloc.height)
+        snapshot.to_node().draw(cr)
+        surface.write_to_png(screenshot_filename)
+        print(f"Screenshot saved to {screenshot_filename}. Exiting.", file=sys.stderr)
+        sys.exit(0)
 
     timeout_ms = int(os.environ.get("MELD_SCREENSHOT_TIMEOUT_MS", "3000"))
     GLib.timeout_add(timeout_ms, take_screenshot)
@@ -531,8 +487,8 @@ def run_application():
     app = MeldApp()
 
     if sys.platform != 'win32':
-        from gi.repository import GLib, GLibUnix
-        GLibUnix.signal_add(
+        from gi.repository import GLib
+        GLib.unix_signal_add(
             GLib.PRIORITY_DEFAULT, signal.SIGINT, lambda *args: app.quit())
 
     return app.run(sys.argv)
@@ -546,6 +502,7 @@ def main():
     setup_glib_logging()
     setup_resources()
     setup_settings()
+    setup_style()
     ci_screenshot()
     return run_application()
 

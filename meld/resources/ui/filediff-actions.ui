@@ -5,16 +5,15 @@
     <property name="spacing">6</property>
     <child>
       <object class="GtkBox">
-        <property name="homogeneous">1</property>
+        <property name="homogeneous">True</property>
         <style>
           <class name="linked"/>
         </style>
         <child>
           <object class="GtkButton">
             <property name="action-name">view.file-push-left</property>
-
-            <property name="tooltip-text" translatable="1">Push current change to the left</property>
-            <property name="focus_on_click">0</property>
+            <property name="tooltip-text" translatable="yes">Push current change to the left</property>
+            <property name="focus_on_click">False</property>
             <style>
               <class name="image-button"/>
             </style>
@@ -29,9 +28,8 @@
         <child>
           <object class="GtkButton">
             <property name="action-name">view.file-push-right</property>
-
-            <property name="tooltip-text" translatable="1">Push current change to the right</property>
-            <property name="focus_on_click">0</property>
+            <property name="tooltip-text" translatable="yes">Push current change to the right</property>
+            <property name="focus_on_click">False</property>
             <style>
               <class name="image-button"/>
             </style>
@@ -46,53 +44,12 @@
       </object>
     </child>
     <child>
-      <object class="GtkBox">
-        <property name="homogeneous">1</property>
-        <style>
-          <class name="linked"/>
-        </style>
-        <child>
-          <object class="GtkButton">
-            <property name="action-name">view.previous-file</property>
-
-            <property name="tooltip-text" translatable="1">Go to the previous differing file</property>
-            <property name="focus_on_click">0</property>
-            <style>
-              <class name="image-button"/>
-            </style>
-            <child>
-              <object class="GtkImage">
-                <property name="icon-name">media-skip-backward-symbolic</property>
-                <property name="icon-size">normal</property>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkButton">
-            <property name="action-name">view.next-file</property>
-
-            <property name="tooltip-text" translatable="1">Go to the next differing file</property>
-            <property name="focus_on_click">0</property>
-            <style>
-              <class name="image-button"/>
-            </style>
-            <child>
-              <object class="GtkImage">
-                <property name="icon-name">media-skip-forward-symbolic</property>
-                <property name="icon-size">normal</property>
-              </object>
-            </child>
-          </object>
-        </child>
-      </object>
-    </child>
-    <child>
       <object class="GtkMenuButton" id="copy_action_button">
-        <property name="focus_on_click">0</property>
-        <property name="tooltip-text" translatable="1">Copy chunks</property>
+        <property name="focus_on_click">False</property>
+        <property name="tooltip-text" translatable="yes">Copy chunks</property>
         <style>
           <class name="image-button"/>
+          <class name="raised"/>
         </style>
         <child>
           <object class="GtkImage">
@@ -104,11 +61,11 @@
     <child>
       <object class="GtkButton">
         <property name="action-name">view.file-delete</property>
-
-        <property name="tooltip-text" translatable="1">Delete change</property>
-        <property name="focus_on_click">0</property>
+        <property name="tooltip-text" translatable="yes">Delete change</property>
+        <property name="focus_on_click">False</property>
         <style>
           <class name="image-button"/>
+          <class name="raised"/>
         </style>
         <child>
           <object class="GtkImage">

@@ -1,22 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <!-- interface-requires gtk+ 3.20 -->
-  <!-- interface-requires meld.ui.gladesupport 0.0 -->
+  <requires lib="gtk" version="4.0"/>
   <template class="VcView" parent="GtkBox">
     <property name="orientation">vertical</property>
-    <property name="focusable">False</property>
-    <property name="hexpand">True</property>
-    <property name="vexpand">True</property>
     <child>
       <object class="GtkActionBar" id="file_toolbar">
-        <property name="focusable">False</property>
         <child>
           <object class="GtkButton">
             <property name="action_name">view.vc-commit</property>
             <property name="tooltip_text" translatable="yes">Commit changes to version control</property>
             <child>
               <object class="GtkLabel">
-                <property name="focusable">False</property>
                 <property name="label" translatable="yes">Commit…</property>
               </object>
             </child>
@@ -24,7 +18,6 @@
         </child>
         <child>
           <object class="GtkBox">
-            <property name="orientation">horizontal</property>
             <property name="homogeneous">True</property>
             <style>
               <class name="linked"/>
@@ -55,7 +48,6 @@
         </child>
         <child>
           <object class="GtkBox">
-            <property name="orientation">horizontal</property>
             <property name="homogeneous">True</property>
             <style>
               <class name="linked"/>
@@ -119,16 +111,14 @@
         </child>
         <child type="center">
           <object class="GtkBox">
-            <property name="orientation">horizontal</property>
             <style>
               <class name="linked"/>
             </style>
             <child>
               <object class="MeldFileButton" id="file_open_button0">
-                <property name="focusable">False</property>
+                <property name="visible">True</property>
                 <property name="pane">0</property>
                 <property name="action">GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER</property>
-                <property name="local-only">True</property>
                 <property name="dialog_label" translatable="yes">Select Folder</property>
                 <property name="tooltip_text" translatable="yes">Open version controlled folder in this pane</property>
                 <signal name="file-selected" handler="on_file_selected" swapped="no"/>
@@ -136,21 +126,20 @@
             </child>
             <child>
               <object class="PathLabel" id="filelabel">
-                <property name="focusable">False</property>
-                <property name="label" translatable="yes">File 1</property>
+                <property name="visible">True</property>
+                <property name="empty-label" translatable="yes">Unknown folder</property>
               </object>
             </child>
           </object>
         </child>
-        <child>
+        <child type="end">
           <object class="GtkComboBox" id="combobox_vcs">
-            <property name="focusable">False</property>
             <property name="model">liststore_vcs</property>
             <property name="popup_fixed_width">False</property>
             <signal name="changed" handler="on_vc_change" swapped="no"/>
             <child>
               <object class="GtkCellRendererText">
-                <property name="ellipsize">PANGO_ELLIPSIZE_END</property>
+                <property name="ellipsize">end</property>
                 <property name="width-chars">12</property>
                 <property name="max-width-chars">30</property>
               </object>
@@ -160,34 +149,35 @@
               </attributes>
             </child>
           </object>
-
         </child>
         <style>
           <class name="meld-actionbar"/>
         </style>
       </object>
-
     </child>
     <child>
       <object class="MsgAreaController" id="msgarea_mgr">
-        <property name="focusable">False</property>
+        <property name="visible">True</property>
       </object>
-
     </child>
     <child>
       <object class="GtkPaned" id="vc_console_vpaned">
-        <property name="focusable">True</property>
+        <property name="vexpand">1</property>
+        <property name="shrink-end-child">0</property>
+        <property name="shrink-start-child">0</property>
+        <property name="focusable">1</property>
         <property name="orientation">vertical</property>
         <property name="position">250</property>
-        <property name="hexpand">True</property>
-        <property name="vexpand">True</property>
-        <child type="start">
+        <property name="start-child">
           <object class="GtkScrolledWindow" id="scrolledwindow">
-            <property name="focusable">True</property>
-            <child>
-              <object class="GtkTreeView" id="treeview">
-                <property name="focusable">True</property><signal name="cursor-changed" handler="on_treeview_cursor_changed" swapped="no"/>
-                <signal name="row-activated" handler="on_row_activated" swapped="no"/><child>
+            <property name="focusable">1</property>
+            <property name="child">
+              <object class="MeldTreeView" id="treeview">
+                <property name="focusable">1</property>
+                <property name="context-menu-model">vcview-context-menu</property>
+                <signal name="cursor-changed" handler="on_treeview_cursor_changed" swapped="no"/>
+                <signal name="row-activated" handler="on_row_activated" swapped="no"/>
+                <child>
                   <object class="GtkTreeViewColumn" id="name_column">
                     <property name="title" translatable="yes">Name</property>
                     <property name="resizable">True</property>
@@ -232,56 +222,98 @@
                   </object>
                 </child>
               </object>
-            </child>
+            </property>
           </object>
-
-        </child>
-        <child type="end">
+        </property>
+        <property name="end-child">
           <object class="GtkBox" id="console_vbox">
-            <property name="focusable">False</property>
             <property name="margin-start">6</property>
             <property name="margin-end">6</property>
             <property name="orientation">vertical</property>
             <child>
               <object class="GtkLabel" id="label5">
-                <property name="focusable">False</property>
                 <property name="xalign">0</property>
                 <property name="label" translatable="yes">Console output</property>
                 <attributes>
-                  <attribute name="weight" value="bold"/>
+                  <attribute name="weight" value="bold"></attribute>
                 </attributes>
               </object>
-
             </child>
             <child>
               <object class="GtkScrolledWindow" id="console_scrolledwindow">
-                <property name="focusable">True</property>
-
-                <child>
+                <property name="vexpand">1</property>
+                <property name="focusable">1</property>
+                <property name="has-frame">1</property>
+                <property name="child">
                   <object class="GtkTextView" id="consoleview">
-                    <property name="focusable">True</property>
                     <property name="editable">False</property>
                     <property name="cursor_visible">False</property>
-
+                    <property name="focusable">1</property>
+                    <property name="extra-menu">consoleview-context-menu</property>
                   </object>
-                </child>
+                </property>
               </object>
-
             </child>
           </object>
-
-        </child>
+        </property>
       </object>
-
     </child>
   </template>
+  <menu id="consoleview-context-menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Clear</attribute>
+        <attribute name="action">view.clear-console</attribute>
+      </item>
+    </section>
+  </menu>
+  <menu id="vcview-context-menu">
+    <section>
+      <attribute name="id">version-focused-section</attribute>
+      <item>
+        <attribute name="label" translatable="yes">_Compare</attribute>
+        <attribute name="action">view.compare</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Co_mmit…</attribute>
+        <attribute name="action">view.vc-commit</attribute>
+      </item>
+    </section>
+    <section>
+      <attribute name="id">local-changes-section</attribute>
+      <item>
+        <attribute name="label" translatable="yes">_Add</attribute>
+        <attribute name="action">view.vc-add</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Unstage</attribute>
+        <attribute name="action">view.vc-unstage</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Remove</attribute>
+        <attribute name="action">view.vc-remove</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Re_vert</attribute>
+        <attribute name="action">view.vc-revert</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Delete</attribute>
+        <attribute name="action">view.vc-delete-locally</attribute>
+      </item>
+    </section>
+    <section>
+      <attribute name="id">resolve-section</attribute>
+      <item>
+        <attribute name="label" translatable="yes">Resolve Conflict</attribute>
+        <attribute name="action">view.vc-resolve</attribute>
+      </item>
+    </section>
+  </menu>
   <object class="GtkListStore" id="liststore_vcs">
     <columns>
-      <!-- column-name gchararray1 -->
       <column type="gchararray"/>
-      <!-- column-name gpointer1 -->
       <column type="PyObject"/>
-      <!-- column-name gboolean1 -->
       <column type="gboolean"/>
     </columns>
   </object>

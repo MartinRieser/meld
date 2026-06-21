@@ -72,7 +72,6 @@ class Vc(_vc.Vc):
         if commit is not None:
             raise NotImplementedError()
 
-        path = os.path.realpath(os.path.abspath(path))
         if not path.startswith(self.root + os.path.sep):
             raise _vc.InvalidVCPath(self, path, "Path not in repository")
         path = path[len(self.root) + 1:]

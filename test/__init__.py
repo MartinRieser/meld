@@ -3,6 +3,7 @@ TEST_REQUIRES = {
     "GLib": "2.0",
     "Gtk": "4.0",
     "GtkSource": "5",
+    "Adw": "1",
 }
 
 

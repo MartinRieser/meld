@@ -3,9 +3,13 @@
   <requires lib="gtk" version="4.0"/>
   <object class="GtkListStore" id="filter_list_store">
     <columns>
+      <!-- column-name Name -->
       <column type="gchararray"/>
+      <!-- column-name Active -->
       <column type="gboolean"/>
+      <!-- column-name Pattern -->
       <column type="gchararray"/>
+      <!-- column-name ValidPattern -->
       <column type="gboolean"/>
     </columns>
   </object>
@@ -14,20 +18,19 @@
     <child>
       <object class="GtkScrolledWindow" id="scrolledwindow1">
         <property name="vexpand">1</property>
-        <property name="focusable">1</property>
-
+        <property name="focusable">True</property>
         <property name="child">
           <object class="GtkTreeView" id="treeview">
-            <property name="focusable">1</property>
+            <property name="focusable">True</property>
             <property name="model">filter_list_store</property>
-            <property name="headers_clickable">0</property>
-            <property name="reorderable">1</property>
+            <property name="headers_clickable">False</property>
+            <property name="reorderable">True</property>
             <property name="search_column">0</property>
-            <property name="show_expanders">0</property>
-            <property name="rubber_banding">1</property>
+            <property name="show_expanders">False</property>
+            <property name="rubber_banding">True</property>
             <child>
               <object class="GtkTreeViewColumn" id="treeviewcolumn1">
-                <property name="title" translatable="1">Active</property>
+                <property name="title" translatable="yes">Active</property>
                 <child>
                   <object class="GtkCellRendererToggle" id="cellrenderertoggle1">
                     <signal name="toggled" handler="on_cellrenderertoggle_toggled" swapped="no"/>
@@ -41,10 +44,10 @@
             </child>
             <child>
               <object class="GtkTreeViewColumn" id="treeviewcolumn2">
-                <property name="title" translatable="1">Name</property>
+                <property name="title" translatable="yes">Name</property>
                 <child>
                   <object class="GtkCellRendererText" id="cellrenderertext1">
-                    <property name="editable">1</property>
+                    <property name="editable">True</property>
                     <signal name="edited" handler="on_name_edited" swapped="no"/>
                   </object>
                   <attributes>
@@ -55,7 +58,7 @@
             </child>
             <child>
               <object class="GtkTreeViewColumn" id="pattern_column">
-                <property name="title" translatable="1">Pattern</property>
+                <property name="title" translatable="yes">Pattern</property>
                 <child>
                   <object class="GtkCellRendererPixbuf" id="validity_renderer">
                     <property name="width">16</property>
@@ -64,7 +67,7 @@
                 </child>
                 <child>
                   <object class="GtkCellRendererText" id="cellrenderertext2">
-                    <property name="editable">1</property>
+                    <property name="editable">True</property>
                     <signal name="edited" handler="on_pattern_edited" swapped="no"/>
                   </object>
                   <attributes>
@@ -81,25 +84,23 @@
       <object class="GtkBox" id="list_toolbar">
         <property name="css-classes">toolbar</property>
         <property name="valign">center</property>
-        <property name="show_arrow">False</property>
-
         <style>
           <class name="prefs-list-widget-toolbar"/>
         </style>
         <child>
           <object class="GtkButton" id="add">
-            <property name="tooltip_text" translatable="1">Add new filter</property>
-            <property name="label" translatable="1">_Add</property>
-            <property name="use_underline">1</property>
+            <property name="tooltip_text" translatable="yes">Add new filter</property>
+            <property name="label" translatable="yes">_Add</property>
+            <property name="use_underline">True</property>
             <property name="icon_name">list-add-symbolic</property>
             <signal name="clicked" handler="on_add_clicked" swapped="no"/>
           </object>
         </child>
         <child>
           <object class="GtkButton" id="remove">
-            <property name="tooltip_text" translatable="1">Remove selected filter</property>
-            <property name="label" translatable="1">_Remove</property>
-            <property name="use_underline">1</property>
+            <property name="tooltip_text" translatable="yes">Remove selected filter</property>
+            <property name="label" translatable="yes">_Remove</property>
+            <property name="use_underline">True</property>
             <property name="icon_name">list-remove-symbolic</property>
             <signal name="clicked" handler="on_remove_clicked" swapped="no"/>
           </object>
@@ -111,18 +112,18 @@
         </child>
         <child>
           <object class="GtkButton" id="move_up">
-            <property name="tooltip_text" translatable="1">Move item up</property>
-            <property name="label" translatable="1">Move _Up</property>
-            <property name="use_underline">1</property>
+            <property name="tooltip_text" translatable="yes">Move item up</property>
+            <property name="label" translatable="yes">Move _Up</property>
+            <property name="use_underline">True</property>
             <property name="icon_name">go-up-symbolic</property>
             <signal name="clicked" handler="on_move_up_clicked" swapped="no"/>
           </object>
         </child>
         <child>
           <object class="GtkButton" id="move_down">
-            <property name="tooltip_text" translatable="1">Move item down</property>
-            <property name="label" translatable="1">Move _Down</property>
-            <property name="use_underline">1</property>
+            <property name="tooltip_text" translatable="yes">Move item down</property>
+            <property name="label" translatable="yes">Move _Down</property>
+            <property name="use_underline">True</property>
             <property name="icon_name">go-down-symbolic</property>
             <signal name="clicked" handler="on_move_down_clicked" swapped="no"/>
           </object>

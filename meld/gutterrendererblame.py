@@ -20,7 +20,7 @@ import threading
 
 from gi.repository import GLib, GtkSource, Pango
 
-from meld.vc._vc import SafePopen
+from meld.misc import get_hide_window_startupinfo
 
 log = logging.getLogger(__name__)
 
@@ -94,12 +94,13 @@ def fetch_blame_async(filepath: str, buffer_text: str, callback) -> None:
 
             relpath = os.path.relpath(filepath, git_vc.location)
             cmd = ["git", "blame", "--contents", "-", "--porcelain", relpath]
-            proc = SafePopen(
+            proc = subprocess.Popen(
                 cmd, cwd=git_vc.location,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                universal_newlines=True
+                universal_newlines=True,
+                startupinfo=get_hide_window_startupinfo(),
             )
             stdout, stderr = proc.communicate(input=buffer_text)
             if proc.returncode == 0:

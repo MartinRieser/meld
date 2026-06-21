@@ -62,7 +62,11 @@ def test_format_home_relative_path(path, expected_format):
         return_value="/home/hey/",
     ):
         gfile = Gio.File.new_for_path(path)
-        assert format_home_relative_path(gfile).replace('\\', '/') == expected_format
+        res = format_home_relative_path(gfile)
+        import os
+        if os.name == 'nt':
+            res = res.replace('\\', '/')
+        assert res == expected_format
 
 
 @pytest.mark.parametrize(
@@ -117,8 +121,11 @@ def test_format_parent_relative_path(
     child_gfile = Gio.File.new_for_path(child)
 
     label = format_parent_relative_path(parent_gfile, child_gfile)
+    import os
+    if os.name == 'nt':
+        label = label.replace('\\', '/')
 
-    assert label.replace('\\', '/') == expected_label
+    assert label == expected_label
 
 
 def test_format_parent_relative_path_no_parent():

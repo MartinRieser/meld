@@ -85,13 +85,13 @@ class Differ(GObject.GObject):
         super().__init__()
         self.num_sequences = 0
         self.seqlength = [0, 0, 0]
-        self.diffs: list[list[DiffChunk]] = [[], []]
+        self.diffs = [[], []]
         self.syncpoints = []
         self.conflicts = []
         self._old_merge_cache = set()
-        self._changed_chunks: tuple = tuple()
+        self._changed_chunks = tuple()
         self._merge_cache = []
-        self._line_cache: list[list[tuple[int | None, int | None, int | None]]] = [[], [], []]
+        self._line_cache = [[], [], []]
         self.ignore_blanks = False
         self._initialised = False
         self._has_mergeable_changes = (False, False, False, False)
@@ -167,8 +167,8 @@ class Differ(GObject.GObject):
                         break
             return next_chunk
 
-        prev: list[int | None] = [None, None, None]
-        next: list[int | None] = [find_next(0, 0, -1), find_next(0, 1, -1), find_next(1, 2, -1)]
+        prev = [None, None, None]
+        next = [find_next(0, 0, -1), find_next(0, 1, -1), find_next(1, 2, -1)]
         old_end = [0, 0, 0]
 
         for i, c in enumerate(self._merge_cache):
@@ -190,7 +190,7 @@ class Differ(GObject.GObject):
                     end += 1
 
                 next[seq] = find_next(diff, seq, i)
-                chunk_ids = [(i, prev[seq], next[seq])] * (end - start)  # type: ignore[list-item]
+                chunk_ids = [(i, prev[seq], next[seq])] * (end - start)
                 self._line_cache[seq][start:end] = chunk_ids
                 prev[seq], old_end[seq] = i, end
 
@@ -474,7 +474,7 @@ class Differ(GObject.GObject):
             high_mark = high_diff.end_a
             other_seq = 0 if high_seq == 1 else 1
 
-            using: list[list[DiffChunk]] = [[], []]
+            using = [[], []]
             using[high_seq].append(high_diff)
 
             while seq[other_seq]:
@@ -509,15 +509,13 @@ class Differ(GObject.GObject):
         self.seqlength = [len(s) for s in sequences]
 
         for i in range(self.num_sequences - 1):
-            matcher: MyersSequenceMatcher
             if self.syncpoints:
                 syncpoints = [(s[i][0](), s[i][1]()) for s in self.syncpoints]
                 matcher = self._sync_matcher(None,
                                              sequences[1], sequences[i * 2],
                                              syncpoints=syncpoints)
             else:
-                matcher = self._matcher(
-                    None, sequences[1], sequences[i * 2])
+                matcher = self._matcher(None, sequences[1], sequences[i * 2])
             work = matcher.initialise()
             while next(work) is None:
                 yield None

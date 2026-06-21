@@ -23,7 +23,6 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import collections
-import io
 import itertools
 import logging
 import os
@@ -63,8 +62,8 @@ assert len(conflicts) == CONFLICT_MAX
 # Lifted from the itertools recipes section
 def partition(pred, iterable):
     t1, t2 = itertools.tee(iterable)
-    return (list(itertools.filterfalse(pred, t1)),
-            list(filter(pred, t2)))
+    return (list(itertools.ifilterfalse(pred, t1)),
+            list(itertools.ifilter(pred, t2)))
 
 
 class Entry:
@@ -130,17 +129,6 @@ class Entry:
         return entry.state == STATE_IGNORED or entry.isdir
 
 
-class SafePopen(subprocess.Popen):
-    def __del__(self):
-        try:
-            if self.poll() is None:
-                self.wait()
-        except Exception:
-            pass
-        if hasattr(super(), '__del__'):
-            super().__del__()
-
-
 class CaseInsensitivePathDict(dict):
     def __setitem__(self, key, value):
         super().__setitem__(os.path.normcase(key), value)
@@ -152,7 +140,7 @@ class CaseInsensitivePathDict(dict):
         return super().get(os.path.normcase(key), default)
     def pop(self, key, default=None):
         return super().pop(os.path.normcase(key), default)
-    def update(self, other):  # type: ignore[override]
+    def update(self, other):
         for k, v in other.items():
             self[k] = v
 
@@ -172,7 +160,6 @@ class CaseInsensitivePathDefaultDict(collections.defaultdict):
 
 class Vc:
 
-    CMD: ClassVar[str | None]
     VC_DIR: ClassVar[str]
 
     #: Whether to walk the current location's parents to find a
@@ -207,7 +194,7 @@ class Vc:
         Note that this runs at the *location*, not at the *root*.
         """
         cmd = (self.CMD,) + args
-        return SafePopen(
+        return subprocess.Popen(
             cmd, cwd=self.location, stdout=subprocess.PIPE,
             universal_newlines=use_locale_encoding,
             startupinfo=get_hide_window_startupinfo(),
@@ -323,7 +310,7 @@ class Vc:
             self._tree_cache = CaseInsensitivePathDict()
             self._tree_missing_cache = CaseInsensitivePathDefaultDict(set)
             path = './'
-        self._update_tree_state_cache(path)  # type: ignore[attr-defined]
+        self._update_tree_state_cache(path)
 
     def get_entries(self, base):
         parent = Gio.File.new_for_path(base)
@@ -468,15 +455,13 @@ def popen(cmd, cwd=None, use_locale_encoding=True):
     text stream with universal newlines.
     If use_locale_encoding is False output is treated as binary stream.
     """
-    res = subprocess.run(
-        cmd, cwd=cwd, capture_output=True,
-        text=use_locale_encoding,
+
+    process = subprocess.Popen(
+        cmd, cwd=cwd, stdout=subprocess.PIPE,
+        universal_newlines=use_locale_encoding,
         startupinfo=get_hide_window_startupinfo(),
     )
-    if use_locale_encoding:
-        return io.StringIO(res.stdout)
-    else:
-        return io.BytesIO(res.stdout)
+    return process.stdout
 
 
 def call_temp_output(cmd, cwd, file_id='', suffix=None):
@@ -495,22 +480,23 @@ def call_temp_output(cmd, cwd, file_id='', suffix=None):
         cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         startupinfo=get_hide_window_startupinfo(),
     )
+    vc_file = process.stdout
+
+    # Error handling here involves doing nothing; in most cases, the only
+    # sane response is to return an empty temp file.
+
     prefix = 'meld-tmp' + ('-' + file_id if file_id else '')
     with tempfile.NamedTemporaryFile(prefix=prefix,
                                      suffix=suffix, delete=False) as f:
-        assert process.stdout is not None
-        assert process.stderr is not None
-        shutil.copyfileobj(process.stdout, f)  # type: ignore[misc]
-    process.wait()
-    process.stdout.close()
-    process.stderr.close()
+        shutil.copyfileobj(vc_file, f)
     return f.name
 
 
 # Return the return value of a given command
 def call(cmd, cwd=None):
+    devnull = open(os.devnull, "wb")
     return subprocess.call(
-        cmd, cwd=cwd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        cmd, cwd=cwd, stdout=devnull, stderr=devnull,
         startupinfo=get_hide_window_startupinfo(),
     )
 

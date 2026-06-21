@@ -16,10 +16,9 @@
     <property name="row_spacing">3</property>
     <child>
       <object class="GtkSearchEntry" id="entry">
-        <property name="focusable">1</property>
-
-        <property name="activates_default">1</property>
-        <property name="placeholder_text" translatable="1">Search highlight mode…</property>
+        <property name="focusable">True</property>
+        <property name="activates_default">True</property>
+        <property name="placeholder_text" translatable="yes">Search highlight mode…</property>
         <layout>
           <property name="column">0</property>
           <property name="row">0</property>
@@ -28,17 +27,16 @@
     </child>
     <child>
       <object class="GtkScrolledWindow" id="scrolledwindow1">
-        <property name="focusable">1</property>
-        <property name="hexpand">1</property>
-        <property name="vexpand">1</property>
-
+        <property name="focusable">True</property>
+        <property name="hexpand">True</property>
+        <property name="vexpand">True</property>
         <property name="child">
           <object class="GtkTreeView" id="treeview">
-            <property name="focusable">1</property>
+            <property name="focusable">True</property>
             <property name="model">treemodelfilter</property>
-            <property name="headers_visible">0</property>
-            <property name="headers_clickable">0</property>
-            <property name="enable_search">0</property>
+            <property name="headers_visible">False</property>
+            <property name="headers_clickable">False</property>
+            <property name="enable_search">False</property>
             <child internal-child="selection">
               <object class="GtkTreeSelection" id="treeview_selection"/>
             </child>

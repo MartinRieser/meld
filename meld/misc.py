@@ -27,7 +27,6 @@ import subprocess
 from pathlib import PurePath
 from typing import (
     TYPE_CHECKING,
-    Any,
     AnyStr,
     Callable,
     Generator,
@@ -51,18 +50,10 @@ if os.name != "nt":
     from select import select
 else:
     import time
-    from typing import Iterable, List
 
-    def select(  # type: ignore[misc]
-        rlist: Iterable[Any],
-        wlist: Iterable[Any],
-        xlist: Iterable[Any],
-        timeout: Optional[float] = None,
-    ) -> Tuple[List[Any], List[Any], List[Any]]:
-        if timeout is not None:
-            time.sleep(timeout)
-        return list(rlist), list(wlist), list(xlist)
-
+    def select(rlist, wlist, xlist, timeout):
+        time.sleep(timeout)
+        return rlist, wlist, xlist
 
 
 def with_focused_pane(function):
@@ -80,7 +71,7 @@ def get_modal_parent(widget: Optional[Gtk.Widget] = None) -> Gtk.Window:
     if not widget:
         parent = Gtk.Application.get_default().get_active_window()
     elif not isinstance(widget, Gtk.Window):
-        parent = widget.get_toplevel()
+        parent = widget.get_root()
     else:
         parent = widget
     return parent
@@ -95,49 +86,7 @@ def error_dialog(primary: str, secondary: str) -> Gtk.ResponseType:
 
     Primary must be plain text. Secondary must be valid markup.
     """
-    return modal_dialog(
-        primary, secondary, Gtk.ButtonsType.CLOSE, parent=None,
-        messagetype=Gtk.MessageType.ERROR)
-
-
-def modal_dialog(
-    primary: str,
-    secondary: str,
-    buttons: Union[Gtk.ButtonsType, Sequence[Tuple[str, int, Optional[str]]]],
-    *,
-    parent: Optional[Gtk.Window] = None,
-    messagetype: Gtk.MessageType = Gtk.MessageType.WARNING,
-) -> Gtk.ResponseType:
-    """A common message dialog handler for Meld
-
-    This should only ever be used for interactions that must be resolved
-    before the application flow can continue.
-
-    Primary must be plain text. Secondary must be valid markup.
-    """
-
-    custom_buttons: Sequence[Tuple[str, int, Optional[str]]] = []
-    if not isinstance(buttons, Gtk.ButtonsType):
-        custom_buttons, buttons = buttons, Gtk.ButtonsType.NONE
-
-    dialog = Gtk.MessageDialog(
-        transient_for=get_modal_parent(parent),
-        modal=True,
-        destroy_with_parent=True,
-        message_type=messagetype,
-        buttons=buttons,
-        text=primary,
-    )
-    dialog.format_secondary_markup(secondary)
-
-    for label, response_id, style_class in custom_buttons:
-        button = dialog.add_button(label, response_id)
-        if style_class:
-            button.get_style_context().add_class(style_class)
-
-    response = dialog.run()
-    dialog.destroy()
-    return response
+    Gtk.AlertDialog(message=primary, detail=secondary, modal=True).show()
 
 
 def user_critical(
@@ -226,8 +175,8 @@ def get_hide_window_startupinfo():
     if os.name != "nt":
         return None
 
-    startupinfo = subprocess.STARTUPINFO()  # type: ignore[attr-defined]
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # type: ignore[attr-defined]
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     return startupinfo
 
 
@@ -267,15 +216,12 @@ def read_pipe_iter(
                 universal_newlines=True,
                 startupinfo=get_hide_window_startupinfo(),
             )
-            assert self.proc.stdin is not None
             self.proc.stdin.close()
             childout, childerr = self.proc.stdout, self.proc.stderr
-            assert childout is not None
-            assert childerr is not None
             bits: List[str] = []
             while len(bits) == 0 or bits[-1] != "":
                 state = select([childout, childerr], [], [childout, childerr],
-                                yield_interval)
+                               yield_interval)
                 if len(state[0]) == 0:
                     if len(state[2]) == 0:
                         yield None
@@ -465,10 +411,11 @@ def calc_syncpoint(adj: Gtk.Adjustment) -> float:
 
     current = adj.get_value()
     half_a_screen = adj.get_page_size() / 2
-    if half_a_screen == 0:
-        return 0.0
 
     syncpoint = 0.0
+    if not half_a_screen:
+        return syncpoint
+
     # How far through the first half-screen our adjustment is
     top_val = adj.get_lower()
     first_scale = (current - top_val) / half_a_screen

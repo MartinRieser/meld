@@ -18,7 +18,7 @@
 import logging
 from typing import Any, Dict, Sequence
 
-from gi.repository import Gio, Gtk
+from gi.repository import Gio, GObject, Gtk
 
 from meld.filediff import FileDiff
 from meld.melddoc import MeldDoc
@@ -39,9 +39,10 @@ class FourDiff(Gtk.Box, MeldDoc):
     close_signal = MeldDoc.close_signal
     create_diff_signal = MeldDoc.create_diff_signal
     file_changed_signal = MeldDoc.file_changed_signal
-    label_changed = MeldDoc.label_changed
-    move_diff = MeldDoc.move_diff
     tab_state_changed = MeldDoc.tab_state_changed
+
+    tab_title = GObject.Property(type=str, nick="Title used for tab labels")
+    tab_tooltip = GObject.Property(type=str, nick="Tooltip used for tab labels")
 
     paned_main = Gtk.Template.Child()
 
@@ -126,6 +127,10 @@ class FourDiff(Gtk.Box, MeldDoc):
             gfiles[2].get_basename(),
             gfiles[3].get_basename(),
         ])
+
+    def set_labels(self, labels: Sequence[str]):
+        self.tab_title = " : ".join(labels)
+        self.tab_tooltip = "4-pane comparison:\n" + "\n".join(labels)
 
     def set_meta(self, meta: Dict[str, Any]):
         self.filediff_left.set_meta(meta)

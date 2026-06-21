@@ -19,7 +19,7 @@ import logging
 import optparse
 import os
 
-from gi.repository import Gdk, Gio, GLib, Gtk
+from gi.repository import Adw, Gio, GLib, Gtk
 
 import meld.accelerators
 import meld.conf
@@ -34,41 +34,27 @@ log = logging.getLogger(__name__)
 # handle Unicode translated strings within optparse itself that will
 # otherwise crash badly. This just makes optparse use our ugettext
 # import of _, rather than the non-unicode gettext.
-optparse._ = _  # type: ignore[attr-defined]
+optparse._ = _
 
 
-class MeldApp(Gtk.Application):
+class MeldApp(Adw.Application):
 
     def __init__(self):
         super().__init__(
             application_id=meld.conf.APPLICATION_ID,
             flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
+            resource_base_path=meld.conf.RESOURCE_BASE,
         )
-        if not GLib.get_application_name():
-            GLib.set_application_name(meld.conf.APPLICATION_NAME)
+        GLib.set_application_name(meld.conf.APPLICATION_NAME)
         GLib.set_prgname(meld.conf.APPLICATION_ID)
         Gtk.Window.set_default_icon_name(meld.conf.APPLICATION_ID)
-        self.set_resource_base_path(meld.conf.RESOURCE_BASE)
-
-        provider = Gtk.CssProvider()
-        provider.load_from_resource(self.make_resource_path('meld.css'))
-        Gtk.StyleContext.add_provider_for_screen(
-            Gdk.Screen.get_default(), provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     def make_resource_path(self, resource_path: str) -> str:
         return f'{self.props.resource_base_path}/{resource_path}'
 
     def do_startup(self):
-        Gtk.Application.do_startup(self)
+        Adw.Application.do_startup(self)
         meld.accelerators.register_accels(self)
-
-        # Register bundled icons with the icon theme so that
-        # Gtk.IconTheme.load_icon() can find them in the GResource.
-        display = Gdk.Display.get_default()
-        if display:
-            Gtk.IconTheme.get_for_display(display).add_resource_path(
-                meld.conf.RESOURCE_BASE + "/icons")
 
         actions = (
             ("preferences", self.preferences_callback),
@@ -80,10 +66,6 @@ class MeldApp(Gtk.Application):
             action = Gio.SimpleAction.new(name, None)
             action.connect('activate', callback)
             self.add_action(action)
-
-        # Keep clipboard contents after application exit
-        clip = Gtk.Clipboard.get_default(Gdk.Display.get_default())
-        clip.set_can_store(None)
 
         self.new_window()
 
@@ -113,7 +95,7 @@ class MeldApp(Gtk.Application):
         return 0
 
     def do_window_removed(self, widget):
-        Gtk.Application.do_window_removed(self, widget)
+        Adw.Application.do_window_removed(self, widget)
         if not len(self.get_windows()):
             self.quit()
 
@@ -124,30 +106,40 @@ class MeldApp(Gtk.Application):
     #     return False
 
     def preferences_callback(self, action, parameter):
-        parent = self.get_active_window()
-        dialog = PreferencesDialog(transient_for=parent)
-        dialog.present()
+        PreferencesDialog().present(self.get_active_window())
 
     def help_callback(self, action, parameter):
         if meld.conf.DATADIR_IS_UNINSTALLED:
             uri = "https://meld.app/help/"
         else:
             uri = "help:meld"
-        Gtk.show_uri(self.get_active_window(), uri, Gdk.CURRENT_TIME)
+        Gtk.UriLauncher(uri=uri).launch(self.get_active_window(), None)
 
     def about_callback(self, action, parameter):
-        builder = Gtk.Builder.new_from_resource(
-            '/org/gnome/meld/ui/about-dialog.ui')
-        dialog = builder.get_object('about-dialog')
-        dialog.set_version(meld.conf.__version__)
-        dialog.set_logo_icon_name(meld.conf.APPLICATION_ID)
-        dialog.set_transient_for(self.get_active_window())
-        dialog.run()
-        dialog.destroy()
+        if meld.conf.DATADIR_IS_UNINSTALLED:
+            dialog = Adw.AboutDialog(
+                application_icon="org.gnome.Meld",
+                application_name="Meld",
+                website="https://meld.app/",
+                issue_url="https://gitlab.gnome.org/GNOME/meld/issues",
+                license_type=Gtk.License.GPL_2_0,
+            )
+        else:
+            dialog = Adw.AboutDialog.new_from_appdata(
+                "/org/gnome/meld/org.gnome.Meld.metainfo.xml", meld.conf.__version__
+            )
+        dialog.set_copyright(
+            "Copyright © 2002-2009 Stephen Kennedy\n"
+            "Copyright © 2009-2026 Kai Willadsen"
+        )
+        dialog.set_developers(["Kai Willadsen", "Stephen Kennedy", "Vincent Legoll"])
+        dialog.set_artists(["GNOME Project", "Josef Vybíral"])
+        dialog.set_translator_credits(_("translator-credits"))
+        dialog.present()
 
     def quit_callback(self, action, parameter):
         for window in self.get_windows():
-            cancelled = window.emit("close-request")
+            cancelled = window.emit('close-request')
             if cancelled:
                 return
             window.destroy()
@@ -189,7 +181,7 @@ class MeldApp(Gtk.Application):
                 diff_files_args.append(arg)
                 del parser.rargs[0]
 
-        if len(diff_files_args) not in (1, 2, 3, 4):
+        if len(diff_files_args) not in (1, 2, 3):
             raise optparse.OptionValueError(
                 _("wrong number of arguments supplied to --diff"))
         parser.values.diff.append(diff_files_args)
@@ -306,8 +298,8 @@ class MeldApp(Gtk.Application):
             cleanup()
             return parser.exit_status
 
-        if len(args) > 4:
-            parser.local_error(_("too many arguments (wanted 0-4, got %d)") %
+        if len(args) > 3:
+            parser.local_error(_("too many arguments (wanted 0-3, got %d)") %
                                len(args))
         elif options.auto_merge and len(args) < 3:
             parser.local_error(_("can’t auto-merge less than 3 files"))

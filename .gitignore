@@ -36,21 +36,3 @@ data/mime/meld.xml
 data/org.gnome.Meld.gresource
 data/styles/meld-base.style-scheme.xml
 data/styles/meld-dark.style-scheme.xml
-
-# Virtual environments
-.venv/
-venv/
-
-# Ruff linter cache
-.ruff_cache/
-
-# Screenshot artifacts
-*.png
-
-# Temporary text output/log files
-output.txt
-output_utf8.txt
-
-# Local scratch files
-scratch/
-scratch*

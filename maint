@@ -18,7 +18,6 @@ from jinja2 import Environment
 
 loader = importlib.machinery.SourceFileLoader('meld.conf', 'meld/conf.py.in')
 spec = importlib.util.spec_from_loader(loader.name, loader)
-assert spec is not None
 mod = importlib.util.module_from_spec(spec)
 loader.exec_module(mod)
 
@@ -94,8 +93,8 @@ def get_translation_commits(folder):
     if not name_files:
         return []
     commits = name_files.split('\n\n')
-    commit_list = [(c.split('\n')[0], c.split('\n')[1:]) for c in commits]
-    return commit_list
+    commits = [(c.split('\n')[0], c.split('\n')[1:]) for c in commits]
+    return commits
 
 
 def get_translator_langs(folders=[PO_DIR, HELP_DIR]):
@@ -110,7 +109,7 @@ def get_translator_langs(folders=[PO_DIR, HELP_DIR]):
     for folder in folders:
         translation_commits.extend(get_translation_commits(folder))
 
-    author_map: dict[str, set] = collections.defaultdict(set)
+    author_map = collections.defaultdict(set)
     for author, langs in translation_commits:
         langs = [get_lang(lang) for lang in langs if get_lang(lang)]
         author_map[author] |= set(langs)
@@ -145,9 +144,7 @@ def get_last_news_entry():
 
 
 def parse_news_entry(news):
-    features: list[str] = []
-    fixes: list[str] = []
-    translators: list[str] = []
+    features, fixes, translators = [], [], []
     section = None
     sections = {
         'Features': features,
@@ -389,8 +386,6 @@ def version_bump():
     for i, line in enumerate(conf_data):
         if line.startswith('__version__'):
             match = re.match(VERSION_RE, line)
-            if match is None:
-                continue
             version = match.group('version')
             if version != meld.conf.__version__:
                 continue

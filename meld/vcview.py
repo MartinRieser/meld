@@ -22,19 +22,19 @@ import shutil
 import stat
 import sys
 import tempfile
-from typing import Any, Tuple
+from typing import Tuple
 
-from gi.repository import Gdk, Gio, GLib, GObject, Gtk, Pango
+from gi.repository import Adw, Gdk, Gio, GLib, GObject, Gtk, Pango
 
 from meld import tree
 from meld.conf import _
+from meld.const import RecentType
 from meld.externalhelpers import open_files_external
 from meld.iohelpers import trash_or_confirm
-from meld.melddoc import MeldDoc, setup_chunk_movement_shortcuts
+from meld.melddoc import MeldDoc
 from meld.misc import error_dialog, read_pipe_iter
-from meld.recent import RecentType
 from meld.settings import bind_settings, settings
-from meld.ui.vcdialogs import CommitDialog, PushDialog
+from meld.ui.vcdialogs import CommitDialog
 from meld.vc import _null, get_vcs
 from meld.vc._vc import Entry
 
@@ -61,15 +61,14 @@ def cleanup_temp():
         try:
             assert (os.path.exists(f) and os.path.isabs(f) and
                     os.path.dirname(f) == temp_location)
-            shutil.rmtree(f, ignore_errors=True)
+            shutil.rmtree(f, ignore_errors=1)
         except Exception:
             except_str = "{0[0]}: \"{0[1]}\"".format(sys.exc_info())
             print("Directory \"{0}\" not removed due to".format(f), except_str,
                   file=sys.stderr)
 
 
-_temp_dirs: list[Any] = []
-_temp_files: list[Any] = []
+_temp_dirs, _temp_files = [], []
 atexit.register(cleanup_temp)
 
 
@@ -117,7 +116,7 @@ class VcTreeStore(tree.DiffTreeStore):
 
 
 @Gtk.Template(resource_path='/org/gnome/meld/ui/vcview.ui')
-class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
+class VcView(Gtk.Box, MeldDoc):
 
     __gtype_name__ = "VcView"
 
@@ -130,9 +129,10 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
     close_signal = MeldDoc.close_signal
     create_diff_signal = MeldDoc.create_diff_signal
     file_changed_signal = MeldDoc.file_changed_signal
-    label_changed = MeldDoc.label_changed
-    move_diff = MeldDoc.move_diff
     tab_state_changed = MeldDoc.tab_state_changed
+
+    tab_title = GObject.Property(type=str, nick="Title used for tab labels")
+    tab_tooltip = GObject.Property(type=str, nick="Tooltip used for tab labels")
 
     status_filters = GObject.Property(
         type=GObject.TYPE_STRV,
@@ -154,15 +154,6 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         'unknown': ('vc-status-unknown', Entry.is_nonvc),
         'ignored': ('vc-status-ignored', Entry.is_ignored),
     }
-
-    replaced_entries = (
-        # Remove Ctrl+Page Up/Down bindings. These are used to do horizontal
-        # scrolling in GTK by default, but we preference easy tab switching.
-        (Gdk.KEY_Page_Up, Gdk.ModifierType.CONTROL_MASK),
-        (Gdk.KEY_KP_Page_Up, Gdk.ModifierType.CONTROL_MASK),
-        (Gdk.KEY_Page_Down, Gdk.ModifierType.CONTROL_MASK),
-        (Gdk.KEY_KP_Page_Down, Gdk.ModifierType.CONTROL_MASK),
-    )
 
     combobox_vcs = Gtk.Template.Child()
     console_vbox = Gtk.Template.Child()
@@ -193,14 +184,6 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         # parent to make Template work.
         MeldDoc.__init__(self)
         bind_settings(self)
-        setup_chunk_movement_shortcuts(self)
-
-
-        binding_set_names = ("GtkScrolledWindow", "GtkTreeView")
-        for set_name in binding_set_names:
-            binding_set = Gtk.binding_set_find(set_name)
-            for key, modifiers in self.replaced_entries:
-                Gtk.binding_entry_remove(binding_set, key, modifiers)
 
         # Set up per-view action group for top-level menu insertion
         self.view_action_group = Gio.SimpleActionGroup()
@@ -214,11 +197,14 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
 
         # Manually handle GAction additions
         actions = (
+            ('clear-console', self.clear_consoleview),
             ('compare', self.action_diff),
             ('find', self.action_find),
             ('next-change', self.action_next_change),
+            ('next-change-shortcut', self.action_next_change),
             ('open-external', self.action_open_external),
             ('previous-change', self.action_previous_change),
+            ('previous-change-shortcut', self.action_previous_change),
             ('refresh', self.action_refresh),
             ('vc-add', self.action_add),
             ('vc-unstage', self.action_unstage),
@@ -249,23 +235,16 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             ('vc-status-ignored', self.action_filter_state_change,
                 new_boolean('ignored' in self.props.status_filters)),
         )
-        for (name, cb, state) in stateful_actions:
+        for (name, callback, state) in stateful_actions:
             action = Gio.SimpleAction.new_stateful(name, None, state)
-            if cb is not None:
-                action.connect('change-state', cb)
+            if callback:
+                action.connect('change-state', callback)
             self.view_action_group.add_action(action)
-
-        builder = Gtk.Builder.new_from_resource(
-            '/org/gnome/meld/ui/vcview-menus.ui')
-        context_menu = builder.get_object('vcview-context-menu')
-        self.popup_menu = Gtk.Menu.new_from_model(context_menu)
-        self.popup_menu.attach_to_widget(self)
 
         self.model = VcTreeStore()
         self.treeview.set_model(self.model)
         self.treeview.get_selection().connect(
             "changed", self.on_treeview_selection_changed)
-        self.treeview.set_search_equal_func(tree.treeview_search_cb, None)
         self.current_path, self.prev_path, self.next_path = None, None, None
 
         self.name_column.set_attributes(
@@ -280,17 +259,16 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             weight=tree.COL_WEIGHT,
             strikethrough=tree.COL_STRIKE)
         self.location_column.set_attributes(
-            self.location_renderer, text=COL_LOCATION)
+            self.location_renderer, markup=COL_LOCATION)
         self.status_column.set_attributes(
-            self.status_renderer, text=COL_STATUS)
+            self.status_renderer, markup=COL_STATUS)
         self.extra_column.set_attributes(
-            self.extra_renderer, text=COL_OPTIONS)
+            self.extra_renderer, markup=COL_OPTIONS)
 
         self.consolestream = ConsoleStream(self.consoleview)
         self.location = None
         self.vc = None
 
-        assert settings is not None
         settings.bind('vc-console-visible', self.console_vbox, 'visible',
                       Gio.SettingsBindFlags.DEFAULT)
         settings.bind('vc-console-pane-position', self.vc_console_vpaned,
@@ -300,10 +278,6 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         super().on_container_switch_in_event(window)
         self.on_treeview_selection_changed()
         self.scheduler.add_task(self.on_treeview_cursor_changed)
-
-    def on_container_switch_out_event(self, window):
-        self.set_action_enabled("open-external", False)
-        super().on_container_switch_out_event(window)
 
     def get_default_vc(self, vcs):
         target_name = self.vc.NAME if self.vc else None
@@ -402,7 +376,6 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         self.recompute_label()
         self.scheduler.remove_all_tasks()
 
-        assert self.vc is not None
         # If the user is just diffing a file (i.e., not a directory),
         # there's no need to scan the rest of the repository.
         if not os.path.isdir(self.vc.location):
@@ -430,16 +403,14 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         return RecentType.VersionControl, uris
 
     def recompute_label(self):
-        assert self.location is not None
-        assert self.vc is not None
-        self.label_text = os.path.basename(self.location)
-        self.tooltip_text = "\n".join((
+        self.tab_title = os.path.basename(self.location)
+        self.tab_tooltip = GLib.markup_escape_text(
+            "\n".join((
             # TRANSLATORS: This is the name of the version control
             # system being used, e.g., "Git" or "Subversion"
             _("{vc} comparison:").format(vc=self.vc.NAME),
             self.location,
-        ))
-        self.label_changed.emit(self.label_text, self.tooltip_text)
+        )))
 
     def set_labels(self, labels):
         if labels:
@@ -448,7 +419,6 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         self.recompute_label()
 
     def _search_recursively_iter(self, start_path, replace=False):
-        assert self.vc is not None
 
         # Initial yield so when we add this to our tasks, we don't
         # create iterators that may be invalidated.
@@ -470,7 +440,7 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         symlinks_followed = set()
         todo = [(self.model.get_path(iterstart), rootname)]
 
-        flattened = "flatten" in self.props.status_filters
+        flattened = 'flatten' in self.props.status_filters
         active_actions = [
             self.state_actions.get(k) for k in self.props.status_filters]
         filters = [a[1] for a in active_actions if a and a[1]]
@@ -535,16 +505,14 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         path = file.get_path()
         self.set_location(path)
 
-    def on_delete_event(self):
-        self.scheduler.remove_all_tasks()
-        self.close_signal.emit(0)
-        return Gtk.ResponseType.OK
-
     @Gtk.Template.Callback()
     def on_row_activated(self, treeview, path, tvc):
         it = self.model.get_iter(path)
         if self.model.iter_has_child(it):
-            self.toggle_row_expansion(self.treeview, path)
+            if self.treeview.row_expanded(path):
+                self.treeview.collapse_row(path)
+            else:
+                self.treeview.expand_row(path, False)
         else:
             path = self.model.get_file_path(it)
             if not self.model.is_folder(it, 0, path):
@@ -556,7 +524,6 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             self.create_diff_signal.emit(gfiles, kwargs)
 
     def get_diff_arguments_by_path(self, path):
-        assert self.vc is not None
         if isinstance(path, str):
             filepath = path
             it = self.find_iter_by_name(path)
@@ -653,8 +620,6 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         self.refresh()
 
     def on_treeview_selection_changed(self, selection=None):
-        if self.vc is None:
-            return
         if selection is None:
             selection = self.treeview.get_selection()
         model, rows = selection.get_selected_rows()
@@ -662,10 +627,13 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         states = [self.model.get_state(model.get_iter(r), 0) for r in rows]
         path_states = dict(zip(paths, states))
 
-        valid_actions = self.vc.get_valid_actions(path_states)
+        if self.vc:
+            valid_actions = self.vc.get_valid_actions(path_states)
+        else:
+            valid_actions = []
         action_sensitivity = {
             'compare': 'compare' in valid_actions,
-            'open-external': bool(paths),
+            "open-external": bool(paths),
             'vc-add': 'add' in valid_actions,
             'vc-unstage': 'unstage' in valid_actions,
             'vc-commit': 'commit' in valid_actions,
@@ -766,79 +734,84 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             pass
 
     def action_update(self, *args):
-        assert self.vc is not None
         self.vc.update(self.runner)
 
     def action_push(self, *args):
-        assert self.vc is not None
-        response = PushDialog(self).run()
-        if response == Gtk.ResponseType.OK:
-            self.vc.push(self.runner)
+        def action_push_cb(dialog, response):
+            response = dialog.choose_finish(response)
+            if response == "push":
+                self.vc.push(self.runner)
+
+        builder = Gtk.Builder.new_from_resource("/org/gnome/meld/ui/push-dialog.ui")
+        dialog = builder.get_object("push-dialog")
+        dialog.choose(self.get_root(), None, action_push_cb)
 
     def action_commit(self, *args):
-        assert self.vc is not None
-        response, commit_msg = CommitDialog(self).run()
-        if response == Gtk.ResponseType.OK:
-            self.vc.commit(
-                self.runner, self._get_selected_files(), commit_msg)
+        def on_response(response, commit_message):
+            if response == "commit":
+                self.vc.commit(self.runner, self._get_selected_files(), commit_message)
+
+        commit_dialog = CommitDialog()
+        commit_dialog.run(self, on_response)
 
     def action_add(self, *args):
-        assert self.vc is not None
         self.vc.add(self.runner, self._get_selected_files())
 
     def action_unstage(self, *args):
-        assert self.vc is not None
         self.vc.unstage(self.runner, self._get_selected_files())
 
     def action_remove(self, *args):
         selected = self._get_selected_files()
-        if any(os.path.isdir(p) for p in selected):
-            # TODO: Improve and reuse this dialog for the non-VC delete action
-            dialog = Gtk.MessageDialog(
-                parent=self.get_toplevel(),
-                flags=(Gtk.DialogFlags.MODAL |
-                       Gtk.DialogFlags.DESTROY_WITH_PARENT),
-                type=Gtk.MessageType.WARNING,
-                message_format=_("Remove folder and all its files?"))
-            dialog.format_secondary_text(
-                _("This will remove all selected files and folders, and all "
-                  "files within any selected folders, from version control."))
 
-            dialog.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
-            dialog.add_button(_("_Remove"), Gtk.ResponseType.OK)
-            response = dialog.run()
-            dialog.destroy()
-            if response != Gtk.ResponseType.OK:
-                return
+        # Don't prompt for confirmation if we're only removing files
+        # from version control
+        if not any(os.path.isdir(p) for p in selected):
+            self.vc.remove(self.runner, selected)
+            return
 
-        assert self.vc is not None
-        self.vc.remove(self.runner, selected)
+        def action_remove_cb(dialog, response):
+            response = dialog.choose_finish(response)
+            if response == "remove":
+                self.vc.remove(self.runner, selected)
+
+        dialog = Adw.AlertDialog(
+            heading=_("Remove folder and all its files?"),
+            body=_(
+                "This will remove all selected files and folders, and all "
+                "files within any selected folders, from version control."
+            ),
+        )
+        dialog.add_response("cancel", _("_Cancel"))
+        dialog.add_response("remove", _("_Remove"))
+        dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.choose(self.get_root(), None, action_remove_cb)
 
     def action_resolved(self, *args):
-        assert self.vc is not None
         self.vc.resolve(self.runner, self._get_selected_files())
 
     def action_revert(self, *args):
-        assert self.vc is not None
         self.vc.revert(self.runner, self._get_selected_files())
 
     def action_delete(self, *args):
         files = self._get_selected_files()
-        for name in files:
-            gfile = Gio.File.new_for_path(name)
+        workdir = os.path.dirname(os.path.commonprefix(files))
+
+        def _delete_file(success, files=files):
+            if not success or not files:
+                self.refresh_partial(workdir)
+                return
+
+            gfile = Gio.File.new_for_path(files.pop())
+            filename = GLib.markup_escape_text(gfile.get_parse_name())
 
             try:
-                trash_or_confirm(gfile)
+                trash_or_confirm(gfile, _delete_file, parent=self)
             except Exception as e:
-                error_dialog(
-                    _("Error deleting {}").format(
-                        GLib.markup_escape_text(gfile.get_parse_name()),
-                    ),
-                    str(e),
-                )
+                error_dialog(_(f"Error deleting {filename}"), str(e))
 
-        workdir = os.path.dirname(os.path.commonprefix(files))
-        self.refresh_partial(workdir)
+        _delete_file(True, files)
 
     def action_diff(self, *args):
         # TODO: Review the compare/diff action. It doesn't really add much
@@ -859,7 +832,6 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         self.set_location(self.model.get_file_path(root))
 
     def refresh_partial(self, where):
-        assert self.vc is not None
         if not self.get_action_state('vc-flatten'):
             it = self.find_iter_by_name(where)
             if not it:
@@ -877,7 +849,6 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
             self.refresh()
 
     def _update_item_state(self, it, entry):
-        assert self.vc is not None
         self.model.set_path_state(it, 0, entry.state, entry.isdir)
 
         location = Gio.File.new_for_path(self.vc.location)
@@ -889,7 +860,6 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
         self.model.set_value(it, COL_OPTIONS, entry.options)
 
     def on_file_changed(self, filename):
-        assert self.vc is not None
         it = self.find_iter_by_name(filename)
         if it:
             path = self.model.get_file_path(it)
@@ -919,23 +889,9 @@ class VcView(Gtk.Box, tree.TreeviewCommon, MeldDoc):
                 break
         return None
 
-    @Gtk.Template.Callback()
-    def on_consoleview_populate_popup(self, textview, menu):
-        buf = textview.get_buffer()
-        clear_action = Gtk.MenuItem.new_with_label(_("Clear"))
-        clear_action.connect(
-            "activate", lambda *args: buf.delete(*buf.get_bounds()))
-        menu.append(clear_action)
-        menu.append(Gtk.SeparatorMenuItem())
-
-    @Gtk.Template.Callback()
-    def on_treeview_popup_menu(self, treeview):
-        return tree.TreeviewCommon.on_treeview_popup_menu(self, treeview)
-
-    @Gtk.Template.Callback()
-    def on_treeview_button_press_event(self, treeview, event):
-        return tree.TreeviewCommon.on_treeview_button_press_event(
-            self, treeview, event)
+    def clear_consoleview(self, *args):
+        buf = self.consoleview.get_buffer()
+        buf.delete(*buf.get_bounds())
 
     @Gtk.Template.Callback()
     def on_treeview_cursor_changed(self, *args):

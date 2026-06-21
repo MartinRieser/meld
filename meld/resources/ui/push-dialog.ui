@@ -1,35 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
-  <template class="PushDialog" parent="GtkMessageDialog">
-    <property name="message_type">question</property>
-    <property name="text" translatable="1">Push local commits to remote?</property>
-    <property name="secondary_text" translatable="1">The commits to be pushed are determined by your version control system.</property>
-    <action-widgets>
-      <action-widget response="-6">cancelbutton</action-widget>
-      <action-widget response="-5">pushbutton</action-widget>
-    </action-widgets>
-    <child internal-child="action_area">
-      <object class="GtkBox" id="dialog-action_area2">
-        <property name="spacing">6</property>
-        <property name="halign">end</property>
-        <child>
-          <object class="GtkButton" id="cancelbutton">
-            <property name="label" translatable="1">_Cancel</property>
-            <property name="focusable">1</property>
-            <property name="receives_default">1</property>
-            <property name="use_underline">1</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkButton" id="pushbutton">
-            <property name="label" translatable="1">_Push commits</property>
-            <property name="focusable">1</property>
-            <property name="receives_default">1</property>
-            <property name="use_underline">1</property>
-          </object>
-        </child>
-      </object>
-    </child>
-  </template>
+  <requires lib="libadwaita" version="1.0"/>
+  <object class="AdwAlertDialog" id="push-dialog">
+    <property name="heading" translatable="yes">Push local commits to remote?</property>
+    <property name="body" translatable="yes">The commits to be pushed are determined by your version control system.</property>
+    <property name="prefer-wide-layout">1</property>
+    <property name="default-response">push</property>
+    <property name="close-response">cancel</property>
+    <responses>
+      <response id="cancel" translatable="yes">_Cancel</response>
+      <response id="push" translatable="yes" appearance="suggested">_Push commits</response>
+    </responses>
+  </object>
 </interface>

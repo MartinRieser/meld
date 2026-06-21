@@ -92,16 +92,15 @@ def test_case_insensitive_path_dict():
     assert "file.txt" in dd["c:\\path\\to\\folder"]
 
 
-def test_commit_dialog():
+def test_commit_dialog(meld_app):
     vcview = VcView()
     import meld.vc.git
     vcview.vc = meld.vc.git.Vc(os.path.abspath('.'))
     vcview.location = vcview.vc.location
 
     from meld.ui.vcdialogs import CommitDialog
-    dialog = CommitDialog(vcview)
+    dialog = CommitDialog()
     assert dialog is not None
-    dialog.destroy()
 
 
 def test_path_normalization_casing():
@@ -228,15 +227,4 @@ def test_vcview_run_diff_casing(tmp_path):
     assert diff_args is not None
 
 
-def test_dialog_run_compatibility():
-    from gi.repository import GLib, Gtk
-    dialog = Gtk.Dialog()
 
-    def emit_response():
-        dialog.response(Gtk.ResponseType.OK)
-        return False
-
-    GLib.idle_add(emit_response)
-    response = dialog.run()
-    assert response == Gtk.ResponseType.OK
-    dialog.destroy()

@@ -14,15 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Helper utilities for working with GtkTreeStore and GtkTreePath."""
-
-from typing import Any, Callable, Generator, List, Optional, Tuple
-
 from gi.repository import Gtk
 
 
-def tree_path_as_tuple(path: Gtk.TreePath) -> Tuple[int, ...]:
-    """Get the path indices as a tuple.
+def tree_path_as_tuple(path):
+    """Get the path indices as a tuple
 
     This helper only exists because we often want to use tree paths
     as set members or dictionary keys, and this is a convenient option.
@@ -30,22 +26,19 @@ def tree_path_as_tuple(path: Gtk.TreePath) -> Tuple[int, ...]:
     return tuple(path.get_indices())
 
 
-def tree_path_prev(path: List[int]) -> Optional[List[int]]:
-    """Return the tree path of the previous sibling at the same depth level."""
+def tree_path_prev(path):
     if not path or path[-1] == 0:
         return None
     return path[:-1] + [path[-1] - 1]
 
 
-def tree_path_up(path: List[int]) -> Optional[List[int]]:
-    """Return the parent tree path by moving up one level in depth."""
+def tree_path_up(path):
     if not path:
         return None
     return path[:-1]
 
 
-def valid_path(model: Gtk.TreeModel, path: Any) -> bool:
-    """Check if the tree path is valid within the tree model."""
+def valid_path(model, path):
     try:
         model.get_iter(path)
         return True
@@ -53,14 +46,13 @@ def valid_path(model: Gtk.TreeModel, path: Any) -> bool:
         return False
 
 
-def refocus_deleted_path(model: Gtk.TreeModel, path: List[int]) -> Optional[List[int]]:
-    """Find a new valid path to focus when the current path is deleted.
+def refocus_deleted_path(model, path):
+    # Since the passed path has been deleted, either the path is now a
+    # valid successor, or there are no successors. If valid, return it.
+    # If not, and the path has a predecessor sibling (immediate or
+    # otherwise), then return that. If there are no siblings, traverse
+    # parents until we get a valid path, and return that.
 
-    It tries the following options in order:
-    1. The successor path (which now occupies the deleted path's index).
-    2. The predecessor sibling (immediate or earlier).
-    3. The closest valid parent path.
-    """
     if valid_path(model, path):
         return path
 
@@ -75,14 +67,11 @@ def refocus_deleted_path(model: Gtk.TreeModel, path: List[int]) -> Optional[List
         if valid_path(model, new_path):
             return new_path
         new_path = tree_path_up(new_path)
-    return None
 
 
 class SearchableTreeStore(Gtk.TreeStore):
-    """Subclass of Gtk.TreeStore with helper methods for searching and traversing."""
 
-    def inorder_search_down(self, it: Gtk.TreeIter) -> Generator[Gtk.TreeIter, None, None]:
-        """Perform a depth-first traversal downwards starting from the given iterator."""
+    def inorder_search_down(self, it):
         while it:
             child = self.iter_children(it)
             if child:
@@ -102,14 +91,12 @@ class SearchableTreeStore(Gtk.TreeStore):
                             break
             yield it
 
-    def inorder_search_up(self, it: Gtk.TreeIter) -> Generator[Gtk.TreeIter, None, None]:
-        """Perform a depth-first traversal upwards starting from the given iterator."""
+    def inorder_search_up(self, it):
         while it:
             path = self.get_path(it)
-            indices = path.get_indices()
-            if indices[-1]:
-                new_indices = list(indices[:-1]) + [indices[-1] - 1]
-                it = self.get_iter(Gtk.TreePath.new_from_indices(new_indices))
+            if path[-1]:
+                path = path[:-1] + [path[-1] - 1]
+                it = self.get_iter(path)
                 while 1:
                     nc = self.iter_n_children(it)
                     if nc:
@@ -124,10 +111,7 @@ class SearchableTreeStore(Gtk.TreeStore):
                     return
             yield it
 
-    def get_previous_next_paths(
-        self, path: Gtk.TreePath, match_func: Callable[[Gtk.TreeIter], bool]
-    ) -> Tuple[Optional[Gtk.TreePath], Optional[Gtk.TreePath]]:
-        """Find the closest matching previous and next paths matching the given function."""
+    def get_previous_next_paths(self, path, match_func):
         prev_path, next_path = None, None
         try:
             start_iter = self.get_iter(path)

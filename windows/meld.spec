@@ -1,5 +1,4 @@
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -7,8 +6,6 @@ from pathlib import Path
 
 import pyinstaller_versionfile
 from packaging.version import Version
-
-_repo_root = Path(os.environ.get("GITHUB_WORKSPACE", "../.."))
 
 
 def get_install_tree_library_path():
@@ -25,11 +22,26 @@ def get_install_languages():
     return [p.parents[1].name for p in mo_paths]
 
 
+def get_repo_path():
+    return subprocess.run(["git", "rev-parse", "--show-toplevel"],
+        encoding="utf-8",
+        capture_output=True,
+        text=True,
+    ).stdout.strip("\n")
+
+# NOTE: First attempt in path handling was to do this nicely and find the repo
+# root and do meson introspection and file copying relative to that. This
+# didn't work because the absolute paths somehow got mangled from being
+# msys-root-based paths to being /c/home/whatever style paths. In the end,
+# just using "../.." worked.
+
 def get_version() -> Version:
+    cwd = get_repo_path()
+
     projectinfo = json.loads(
         subprocess.run(
             ["meson", "introspect", "meson.build", "--projectinfo"],
-            cwd=str(_repo_root),
+            cwd="../..",
             encoding="utf-8",
             capture_output=True,
             text=True,
@@ -41,7 +53,7 @@ def get_version() -> Version:
 
 def copy_repo_files():
     shutil.copy2(
-        str(_repo_root / "data/icons/org.gnome.meld.ico"),
+        "../../data/icons/org.gnome.meld.ico",
         "./meld.ico",
     )
 
@@ -49,7 +61,7 @@ def copy_repo_files():
 copy_repo_files()
 version = get_version()
 version_string = f"{version.major}.{version.minor}.{version.micro}"
-copyright = "Copyright © 2002-2006 Stephen Kennedy, 2008-2026 Kai Willadsen"
+copyright = "Copyright © 2002-2006 Stephen Kennedy, 2008-2025 Kai Willadsen"
 
 # Insert the site-packages path that's been installed by meson/ninja into
 # PYTHONPATH so that pyinstaller finds the meld package from there.
@@ -70,8 +82,8 @@ a = Analysis(
             "themes": ["Adwaita"],
             "languages": get_install_languages(),
             "module-versions": {
-                "Gtk": "4.0",
-                "GtkSource": "5",
+                "Gtk": "3.0",
+                "GtkSource": "4",
             },
         },
     },

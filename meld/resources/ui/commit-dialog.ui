@@ -1,131 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
-  <template class="CommitDialog" parent="GtkDialog">
-    <property name="title" translatable="1">Commit</property>
-    <property name="modal">1</property>
-    <property name="default_width">450</property>
-    <child internal-child="content_area">
+  <requires lib="libadwaita" version="1.0"/>
+  <template class="CommitDialog" parent="AdwAlertDialog">
+    <property name="heading" translatable="1">Commit Files</property>
+    <property name="prefer-wide-layout">1</property>
+    <property name="default-response">commit</property>
+    <property name="close-response">cancel</property>
+    <property name="extra-child">
       <object class="GtkBox" id="dialog-vbox1">
         <property name="orientation">vertical</property>
-        <property name="spacing">18</property>
         <child>
-          <object class="GtkBox" id="vbox0">
-            <property name="vexpand">1</property>
-            <property name="orientation">vertical</property>
-            <property name="spacing">18</property>
+          <object class="AdwPreferencesGroup">
+            <property name="title" translatable="1">Changed Files</property>
             <child>
-              <object class="GtkBox" id="vbox1">
-                <property name="vexpand">1</property>
-                <property name="orientation">vertical</property>
-                <property name="spacing">6</property>
-                <child>
-                  <object class="GtkLabel" id="label2">
-                    <property name="xalign">0</property>
-                    <property name="label" translatable="1">Commit Files</property>
-                    <attributes>
-                      <attribute name="weight" value="bold"></attribute>
-                    </attributes>
+              <object class="GtkScrolledWindow">
+                <property name="hexpand">1</property>
+                <property name="max-content-height">200</property>
+                <property name="propagate-natural-height">1</property>
+                <property name="child">
+                  <object class="GtkListBox" id="changedfiles">
+                    <property name="selection-mode">none</property>
                   </object>
-                </child>
-                <child>
-                  <object class="GtkBox" id="hbox1">
-                    <property name="vexpand">1</property>
-                    <child>
-                      <object class="GtkLabel" id="label1">
-                        <property name="halign">center</property>
-                        <property name="margin-start">12</property>
-                        <property name="margin-end">12</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkScrolledWindow" id="scrolledwindow_changed">
-                        <property name="hexpand">1</property>
-                        <property name="height_request">150</property>
-                        <property name="focusable">1</property>
-
-                        <property name="child">
-                          <object class="GtkViewport" id="viewport_changed">
-
-                            <property name="child">
-                              <object class="GtkLabel" id="changedfiles">
-                                <property name="focusable">1</property>
-                                <property name="xalign">0</property>
-                                <property name="yalign">0</property>
-                                <property name="wrap">1</property>
-                                <property name="selectable">1</property>
-                              </object>
-                            </property>
-                          </object>
-                        </property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
+                </property>
+                <style>
+                  <class name="card"/>
+                  <class name="meld-commit-dialog-file-list"/>
+                </style>
               </object>
             </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title" translatable="1">Log Message</property>
             <child>
-              <object class="GtkBox" id="vbox2">
-                <property name="vexpand">1</property>
+              <object class="GtkBox">
+                <property name="hexpand">1</property>
                 <property name="orientation">vertical</property>
                 <property name="spacing">6</property>
                 <child>
-                  <object class="GtkLabel" id="label3">
-                    <property name="xalign">0</property>
-                    <property name="label" translatable="1">Log Message</property>
-                    <attributes>
-                      <attribute name="weight" value="bold"></attribute>
-                    </attributes>
+                  <object class="GtkScrolledWindow" id="message_scrolled_window">
+                    <property name="vexpand">1</property>
+                    <property name="height-request">200</property>
+                    <child>
+                      <object class="CommitMessageSourceView" id="textview">
+                        <property name="wrap-mode">word</property>
+                        <style>
+                          <class name="meld-monospace-font"/>
+                        </style>
+                      </object>
+                    </child>
+                    <style>
+                      <class name="card"/>
+                      <class name="meld-commit-dialog-log-message"/>
+                    </style>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkBox" id="hbox4">
-                    <property name="vexpand">1</property>
+                  <object class="GtkBox">
+                    <property name="spacing">12</property>
                     <child>
-                      <object class="GtkLabel" id="label4">
-                        <property name="halign">center</property>
-                        <property name="margin-start">12</property>
-                        <property name="margin-end">12</property>
+                      <object class="GtkLabel">
+                        <property name="label" translatable="1">Previous logs:</property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkBox" id="vbox3">
+                      <object class="HistoryCombo" id="previousentry">
                         <property name="hexpand">1</property>
-                        <property name="orientation">vertical</property>
-                        <property name="spacing">6</property>
-                        <child>
-                          <object class="GtkScrolledWindow" id="scrolledwindow1">
-                            <property name="vexpand">1</property>
-                            <property name="height_request">200</property>
-                            <property name="focusable">1</property>
-
-                            <child>
-                              <object class="CommitMessageSourceView" id="textview">
-                                <property name="focusable">True</property>
-                                <property name="wrap_mode">word</property>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkBox" id="previousbox">
-                            <property name="spacing">12</property>
-                            <child>
-                              <object class="GtkLabel" id="previouslogs_label">
-                                <property name="halign">center</property>
-                                <property name="label" translatable="1">Previous logs:</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="HistoryCombo" id="previousentry">
-                                <property name="hexpand">1</property>
-                                <property name="focusable">False</property>
-                                <property name="history_id">commit-messages</property>
-                                <signal name="changed" handler="on_previousentry_activate" swapped="no"/>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
+                        <property name="focusable">0</property>
+                        <property name="history-id">commit-messages</property>
+                        <signal handler="on_previousentry_activate" name="changed" swapped="no"/>
                       </object>
                     </child>
                   </object>
@@ -135,30 +80,10 @@
           </object>
         </child>
       </object>
-    </child>
-    <action-widgets>
-      <action-widget response="-6">cancelbutton1</action-widget>
-      <action-widget response="-5">okbutton1</action-widget>
-    </action-widgets>
-    <child internal-child="action_area">
-      <object class="GtkBox" id="dialog-action_area1">
-        <property name="spacing">6</property>
-        <property name="halign">end</property>
-        <child>
-          <object class="GtkButton" id="cancelbutton1">
-            <property name="label" translatable="1">_Cancel</property>
-            <property name="focusable">1</property>
-
-            <property name="use_underline">1</property>
-          </object></child>
-        <child>
-          <object class="GtkButton" id="okbutton1">
-            <property name="label" translatable="1">Co_mmit</property>
-            <property name="focusable">1</property>
-
-            <property name="use_underline">1</property>
-          </object></child>
-      </object>
-    </child>
+    </property>
+    <responses>
+      <response id="cancel" translatable="yes">_Cancel</response>
+      <response appearance="suggested" id="commit" translatable="yes">Co_mmit</response>
+    </responses>
   </template>
 </interface>

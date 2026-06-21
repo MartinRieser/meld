@@ -14,9 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-from typing import Optional
 
-from gi.repository import Gio, GObject, GtkSource, Pango
+from gi.repository import Adw, Gio, GObject, GtkSource, Pango
 
 import meld.conf
 import meld.filters
@@ -33,12 +32,16 @@ class MeldSettings(GObject.GObject):
 
     def __init__(self):
         super().__init__()
-        self.on_setting_changed(settings, 'filename-filters')  # type: ignore[attr-defined]
-        self.on_setting_changed(settings, 'text-filters')  # type: ignore[attr-defined]
+        self.on_setting_changed(settings, 'filename-filters')
+        self.on_setting_changed(settings, 'text-filters')
         self.on_setting_changed(settings, 'use-system-font')
-        self.on_setting_changed(settings, 'prefer-dark-theme')
+        self.on_setting_changed(settings, "style-scheme")
+        self.on_setting_changed(settings, "style-variant")
         self.style_scheme = self._style_scheme_from_gsettings()
-        settings.connect('changed', self.on_setting_changed)  # type: ignore[attr-defined]
+        settings.connect('changed', self.on_setting_changed)
+
+        style_manager = Adw.StyleManager.get_default()
+        style_manager.connect("notify", self.on_style_manager_setting_notify)
 
     def on_setting_changed(self, settings, key):
         if key == 'filename-filters':
@@ -52,30 +55,33 @@ class MeldSettings(GObject.GObject):
         elif key in ('use-system-font', 'custom-font'):
             self.font = self._current_font_from_gsetting()
             self.emit('changed', 'font')
-        elif key in ('style-scheme', 'prefer-dark-theme'):
+        elif key == "style-scheme":
             self.style_scheme = self._style_scheme_from_gsettings()
             self.emit('changed', 'style-scheme')
+        elif key == "style-variant":
+            manager = Adw.StyleManager.get_default()
+            setting_value = settings.get_enum("style-variant")
+            manager.set_color_scheme(Adw.ColorScheme(setting_value))
+            self.emit("changed", "style-variant")
+
+    def on_style_manager_setting_notify(self, manager, pspec):
+        property_name = pspec.get_name()
+        if property_name == "dark":
+            self.on_setting_changed(settings, "style-scheme")
+        elif property_name == "monospace-font-name":
+            self.on_setting_changed(settings, "use-system-font")
 
     def _style_scheme_from_gsettings(self):
-        from meld.style import set_base_style_scheme
+        from meld.style import adapt_style_scheme, set_base_style_scheme
+
         manager = GtkSource.StyleSchemeManager.get_default()
-        prefer_dark = settings.get_boolean("prefer-dark-theme")  # type: ignore[attr-defined]
-        scheme_id = settings.get_string('style-scheme')  # type: ignore[attr-defined]
-
-        if prefer_dark and scheme_id in ('classic', 'meld-base'):
-            scheme_id = 'meld-dark'
-        elif not prefer_dark and scheme_id == 'meld-dark':
-            scheme_id = 'meld-base'
-
-        scheme = manager.get_scheme(scheme_id)
-        if not scheme:
-            scheme = manager.get_scheme('classic')
-
-        set_base_style_scheme(scheme, prefer_dark)
+        scheme = manager.get_scheme(settings.get_string('style-scheme'))
+        scheme = adapt_style_scheme(scheme)
+        set_base_style_scheme(scheme)
         return scheme
 
     def _filters_from_gsetting(self, key, filt_type):
-        filter_params = settings.get_value(key)  # type: ignore[attr-defined]
+        filter_params = settings.get_value(key)
         filters = [
             meld.filters.FilterEntry.new_from_gsetting(params, filt_type)
             for params in filter_params
@@ -83,16 +89,16 @@ class MeldSettings(GObject.GObject):
         return filters
 
     def _current_font_from_gsetting(self, *args):
-        if settings.get_boolean('use-system-font'):  # type: ignore[attr-defined]
+        if settings.get_boolean('use-system-font'):
             if sys.platform == 'win32':
                 font_string = 'Consolas 11'
-            elif interface_settings:
-                font_string = interface_settings.get_string(
-                    'monospace-font-name')
             else:
-                font_string = 'monospace'
+                style_manager = Adw.StyleManager.get_default()
+                font_string = style_manager.get_monospace_font_name()
         else:
-            font_string = settings.get_string('custom-font')  # type: ignore[attr-defined]
+            font_string = settings.get_string('custom-font')
+        if not font_string:
+            font_string = "monospace 11"
         return Pango.FontDescription(font_string)
 
 
@@ -111,28 +117,14 @@ def load_settings_schema(schema_id):
     return settings
 
 
-def load_interface_settings() -> Optional[Gio.Settings]:
-
-    # We conditionally load these since they're only used for default
-    # fonts and can sometimes be missing (e.g., in some Windows setups)
-    default_source = Gio.SettingsSchemaSource.get_default()
-    schema = default_source.lookup("org.gnome.desktop.interface", False)
-    if not schema:
-        return None
-
-    return Gio.Settings.new_full(schema=schema, backend=None, path=None)
-
-
 def create_settings():
-    global settings, interface_settings, _meldsettings
+    global settings, _meldsettings
 
     settings = load_settings_schema(meld.conf.SETTINGS_SCHEMA_ID)
-    interface_settings = load_interface_settings()
     _meldsettings = MeldSettings()
 
 
 def bind_settings(obj):
-    global settings
     bind_flags = (
         Gio.SettingsBindFlags.DEFAULT | Gio.SettingsBindFlags.NO_SENSITIVITY)
     for binding in getattr(obj, '__gsettings_bindings__', ()):
@@ -155,5 +147,4 @@ def get_meld_settings() -> MeldSettings:
 
 
 settings = None
-interface_settings = None
 _meldsettings = None

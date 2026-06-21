@@ -17,8 +17,7 @@
 
 import math
 
-import cairo
-from gi.repository import Gtk
+from gi.repository import Gdk, Gtk
 
 from meld.settings import get_meld_settings
 from meld.style import get_common_theme
@@ -35,6 +34,8 @@ class LinkMap(Gtk.DrawingArea):
         self.filediff = None
         self.views = []
 
+        self.set_draw_func(self.draw)
+
     def associate(self, filediff, left_view, right_view):
         self.filediff = filediff
         self.views = [left_view, right_view]
@@ -50,7 +51,7 @@ class LinkMap(Gtk.DrawingArea):
         if key == 'style-scheme':
             self.fill_colors, self.line_colors = get_common_theme()
 
-    def do_draw(self, context):
+    def draw(self, _linkmap, context, width, height):
         if not self.views:
             return
 
@@ -85,7 +86,7 @@ class LinkMap(Gtk.DrawingArea):
             line_start = self.views[view_idx].get_y_for_line_num(line_num)
             return line_start - pix_start[view_idx] + y_offset[view_idx]
 
-        for c in self.filediff.linediffer.pair_changes(left, right, visible):  # type: ignore[union-attr]
+        for c in self.filediff.linediffer.pair_changes(left, right, visible):
             # f and t are short for "from" and "to"
             f0, f1 = [view_offset_line(0, line) for line in c[1:3]]
             t0, t1 = [view_offset_line(1, line) for line in c[3:5]]
@@ -97,57 +98,40 @@ class LinkMap(Gtk.DrawingArea):
             if (t0 < 0 and t1 < 0) or (t0 > height and t1 > height):
                 if f0 == f1:
                     continue
-                context.arc(
-                    x_steps[0], f0 - 0.5 + RADIUS, RADIUS, q_rad * 3, 0)
-                context.arc(x_steps[0], f1 - 0.5 - RADIUS, RADIUS, 0, q_rad)
+                context.arc(x_steps[0], f0 - 0.5 + RADIUS, RADIUS, q_rad * 3, 0)
+                context.arc(x_steps[0], f1 + 0.5 - RADIUS, RADIUS, 0, q_rad)
                 context.close_path()
             elif (f0 < 0 and f1 < 0) or (f0 > height and f1 > height):
                 if t0 == t1:
                     continue
-                context.arc_negative(x_steps[2], t0 - 0.5 + RADIUS, RADIUS,
-                                     q_rad * 3, q_rad * 2)
-                context.arc_negative(x_steps[2], t1 - 0.5 - RADIUS, RADIUS,
-                                     q_rad * 2, q_rad)
+                context.arc_negative(
+                    x_steps[2], t0 - 0.5 + RADIUS, RADIUS, q_rad * 3, q_rad * 2
+                )
+                context.arc_negative(
+                    x_steps[2], t1 + 0.5 - RADIUS, RADIUS, q_rad * 2, q_rad
+                )
                 context.close_path()
             else:
                 context.move_to(x_steps[0], f0 - 0.5)
-                context.curve_to(x_steps[1], f0 - 0.5,
-                                 x_steps[1], t0 - 0.5,
-                                 x_steps[2], t0 - 0.5)
-                context.line_to(x_steps[2], t1 - 0.5)
-                context.curve_to(x_steps[1], t1 - 0.5,
-                                 x_steps[1], f1 - 0.5,
-                                 x_steps[0], f1 - 0.5)
+                context.curve_to(
+                    x_steps[1], f0 - 0.5, x_steps[1], t0 - 0.5, x_steps[2], t0 - 0.5
+                )
+                context.line_to(x_steps[2], t1 + 0.5)
+                context.curve_to(
+                    x_steps[1], t1 + 0.5, x_steps[1], f1 + 0.5, x_steps[0], f1 + 0.5
+                )
                 context.close_path()
 
-            # Create a linear gradient from left to right for visual connections
-            grad = cairo.LinearGradient(x_steps[0], 0, x_steps[2], 0)
-            color = self.fill_colors[c[0]]
-            grad.add_color_stop_rgba(0.0, color.red, color.green, color.blue, min(color.alpha * 1.5, 0.7))
-            grad.add_color_stop_rgba(0.15, color.red, color.green, color.blue, color.alpha * 0.5)
-            grad.add_color_stop_rgba(0.5, color.red, color.green, color.blue, color.alpha * 0.2)
-            grad.add_color_stop_rgba(0.85, color.red, color.green, color.blue, color.alpha * 0.5)
-            grad.add_color_stop_rgba(1.0, color.red, color.green, color.blue, min(color.alpha * 1.5, 0.7))
-            context.set_source(grad)
+            Gdk.cairo_set_source_rgba(context, self.fill_colors[c[0]])
             context.fill_preserve()
 
-            chunk_idx = self.filediff.linediffer.locate_chunk(left, c[1])[0]  # type: ignore[union-attr]
-            if chunk_idx == self.filediff.cursor.chunk:  # type: ignore[union-attr]
+            chunk_idx = self.filediff.linediffer.locate_chunk(left, c[1])[0]
+            if chunk_idx == self.filediff.cursor.chunk:
                 highlight = self.fill_colors['current-chunk-highlight']
-                grad_hl = cairo.LinearGradient(x_steps[0], 0, x_steps[2], 0)
-                grad_hl.add_color_stop_rgba(0.0, highlight.red, highlight.green, highlight.blue, min(highlight.alpha * 1.5, 0.8))
-                grad_hl.add_color_stop_rgba(0.5, highlight.red, highlight.green, highlight.blue, highlight.alpha * 0.3)
-                grad_hl.add_color_stop_rgba(1.0, highlight.red, highlight.green, highlight.blue, min(highlight.alpha * 1.5, 0.8))
-                context.set_source(grad_hl)
+                Gdk.cairo_set_source_rgba(context, highlight)
                 context.fill_preserve()
 
-            # Render thin border lines that fade out slightly in the center
-            line_color = self.line_colors[c[0]]
-            grad_line = cairo.LinearGradient(x_steps[0], 0, x_steps[2], 0)
-            grad_line.add_color_stop_rgba(0.0, line_color.red, line_color.green, line_color.blue, line_color.alpha)
-            grad_line.add_color_stop_rgba(0.5, line_color.red, line_color.green, line_color.blue, line_color.alpha * 0.4)
-            grad_line.add_color_stop_rgba(1.0, line_color.red, line_color.green, line_color.blue, line_color.alpha)
-            context.set_source(grad_line)
+            Gdk.cairo_set_source_rgba(context, self.line_colors[c[0]])
             context.stroke()
 
 

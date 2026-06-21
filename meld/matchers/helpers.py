@@ -25,7 +25,13 @@ class MatcherWorker(multiprocessing.Process):
 
     def run(self):
         while True:
-            task_id, (text1, textn) = self.tasks.get()
+            try:
+                task_id, (text1, textn) = self.tasks.get(timeout=1.0)
+            except queue.Empty:
+                if not multiprocessing.parent_process().is_alive():
+                    break
+                continue
+
             if task_id == self.END_TASK:
                 break
 
@@ -55,13 +61,13 @@ class CachedSequenceMatcher:
         """
         self.scheduler = scheduler
         self.cache = {}
-        self.tasks: multiprocessing.Queue = multiprocessing.Queue()
+        self.tasks = multiprocessing.Queue()
         self.tasks.cancel_join_thread()
         # Limiting the result queue here has the effect of giving us
         # much better interactivity. Without this limit, the
         # result-checker tends to get starved and all highlights get
         # delayed until we're almost completely finished.
-        self.results: multiprocessing.Queue = multiprocessing.Queue(5)
+        self.results = multiprocessing.Queue(5)
         self.results.cancel_join_thread()
         self.thread = MatcherWorker(self.tasks, self.results)
         self.task_id = 1
@@ -86,9 +92,9 @@ class CachedSequenceMatcher:
                 q.join_thread()
         self.thread.tasks = None
         self.thread.results = None
-        self.tasks = None  # type: ignore[assignment]
-        self.results = None  # type: ignore[assignment]
-        self.thread = None  # type: ignore[assignment]
+        self.tasks = None
+        self.results = None
+        self.thread = None
         gc.collect()
 
     def match(self, text1, textn, cb):

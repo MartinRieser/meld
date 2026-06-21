@@ -28,7 +28,6 @@ if CONFIGURED:
     IS_DEVEL = '@is_devel@' != 'False'
 # Flag enabling some workarounds if data dir isn't installed in standard prefix
 DATADIR_IS_UNINSTALLED = False
-PYTHON_REQUIREMENT_TUPLE = (3, 6)
 
 
 # Installed from main script
@@ -36,12 +35,8 @@ def no_translation(gettext_string: str) -> str:
     return gettext_string
 
 
-def no_translation_plural(singular: str, plural: str, n: int) -> str:
-    return singular if n == 1 else plural
-
-
 _ = no_translation
-ngettext = no_translation_plural
+ngettext = no_translation
 
 
 def frozen():
@@ -70,8 +65,8 @@ def uninstalled():
     LOCALEDIR = melddir / "build" / "mo"
     DATADIR_IS_UNINSTALLED = True
 
-    # G_RESOURCE_OVERLAYS is set later in setup_resources() so that the
-    # GLib log silencer is already active when the overlay is processed.
+    resource_path = melddir / "meld" / "resources"
+    os.environ['G_RESOURCE_OVERLAYS'] = f'{RESOURCE_BASE}={resource_path}'
 
 
 def setup_macos_application_bundle():

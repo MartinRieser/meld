@@ -18,6 +18,8 @@ from typing import ClassVar, Optional
 
 from gi.repository import GObject, Gtk, GtkSource
 
+from meld.ui.gtkutil import GTK_STYLE_CLASS_ERROR
+
 
 @Gtk.Template(resource_path='/org/gnome/meld/ui/findbar.ui')
 class FindBar(Gtk.Grid):
@@ -72,15 +74,6 @@ class FindBar(Gtk.Grid):
             'replace_mode', self, 'row-spacing', GObject.BindingFlags.DEFAULT,
             lambda binding, replace_mode: 6 if replace_mode else 0)
 
-        # Setup shortcut controller for <Shift>Return
-        controller = Gtk.ShortcutController.new()
-        trigger = Gtk.ShortcutTrigger.parse_string("<Shift>Return")
-        action = Gtk.CallbackAction.new(lambda w, *args: (w.activate_secondary(), True)[1])
-        shortcut = Gtk.Shortcut.new(trigger, action)
-        controller.add_shortcut(shortcut)
-        self.add_controller(controller)
-        self.wrap_box.set_visible(False)
-
     def hide(self):
         self.set_text_view(None)
         self.wrap_box.set_visible(False)
@@ -89,14 +82,13 @@ class FindBar(Gtk.Grid):
     def update_match_state(self, *args):
         # Note that -1 here implies that the search is still running
         no_matches = (
-            self.search_context.props.occurrences_count == 0 and  # type: ignore[union-attr]
+            self.search_context.props.occurrences_count == 0 and
             self.search_settings.props.search_text
         )
-        style_context = self.find_entry.get_style_context()
         if no_matches:
-            style_context.add_class('error')
+            self.find_entry.add_css_class(GTK_STYLE_CLASS_ERROR)
         else:
-            style_context.remove_class('error')
+            self.find_entry.remove_css_class(GTK_STYLE_CLASS_ERROR)
 
     def set_text_view(self, textview):
         self.textview = textview
@@ -108,7 +100,7 @@ class FindBar(Gtk.Grid):
                 'notify::occurrences-count', self.update_match_state)
         else:
             if self.notify_id:
-                self.search_context.disconnect(self.notify_id)  # type: ignore[union-attr]
+                self.search_context.disconnect(self.notify_id)
                 self.notify_id = None
             self.search_context = None
 
@@ -148,7 +140,7 @@ class FindBar(Gtk.Grid):
         # Only replace if there is an already-selected match at the cursor
         if (match and oldsel and oldsel[0].equal(newsel[0]) and
                 oldsel[1].equal(newsel[1])):
-            self.search_context.replace(  # type: ignore[union-attr]
+            self.search_context.replace(
                 newsel[0], newsel[1], self.replace_entry.get_text(), -1)
             self._find_text(0)
 
@@ -157,7 +149,7 @@ class FindBar(Gtk.Grid):
         buf = self.textview.get_buffer()
         saved_insert = buf.create_mark(
             None, buf.get_iter_at_mark(buf.get_insert()), True)
-        self.search_context.replace_all(self.replace_entry.get_text(), -1)  # type: ignore[union-attr]
+        self.search_context.replace_all(self.replace_entry.get_text(), -1)
         if not saved_insert.get_deleted():
             buf.place_cursor(buf.get_iter_at_mark(saved_insert))
             self.textview.scroll_to_mark(

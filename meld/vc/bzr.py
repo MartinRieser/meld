@@ -212,11 +212,10 @@ class Vc(_vc.Vc):
             self._reverse_rename_cache[new] = old
 
         self._tree_cache.update(
-            dict((x, max(y)) for x, y in tree_cache.items()))  # type: ignore[type-var]
-        self._tree_meta_cache = _vc.CaseInsensitivePathDict(tree_meta_cache)
+            dict((x, max(y)) for x, y in tree_cache.items()))
+        self._tree_meta_cache = dict(tree_meta_cache)
 
     def get_path_for_repo_file(self, path, commit=None):
-        path = os.path.realpath(os.path.abspath(path))
         if not path.startswith(self.root + os.path.sep):
             raise _vc.InvalidVCPath(self, path, "Path not in repository")
 
@@ -230,7 +229,6 @@ class Vc(_vc.Vc):
         return _vc.call_temp_output(args, cwd=self.root, suffix=suffix)
 
     def get_path_for_conflict(self, path, conflict):
-        path = os.path.realpath(os.path.abspath(path))
         if path in self._reverse_rename_cache and not \
                 conflict == _vc.CONFLICT_MERGED:
             path = self._reverse_rename_cache[path]

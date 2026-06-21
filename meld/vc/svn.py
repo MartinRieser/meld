@@ -77,7 +77,6 @@ class Vc(_vc.Vc):
         else:
             raise NotImplementedError()
 
-        path = os.path.realpath(os.path.abspath(path))
         if not path.startswith(self.root + os.path.sep):
             raise _vc.InvalidVCPath(self, path, "Path not in repository")
         path = path[len(self.root) + 1:]
@@ -98,7 +97,6 @@ class Vc(_vc.Vc):
            .r* (lower - BASE)
            .r* (higher - OTHER)
         """
-        path = os.path.realpath(os.path.abspath(path))
         if not path.startswith(self.root + os.path.sep):
             raise _vc.InvalidVCPath(self, path, "Path not in repository")
 
