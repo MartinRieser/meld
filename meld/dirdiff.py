@@ -1535,10 +1535,17 @@ class DirDiff(Gtk.Box, MeldDoc):
         self.focus_pane.emit("cursor-changed")
 
     def run_diff_from_iter(self, it):
+        path = self.model.get_path(it)
+        gfiles, kwargs = self.get_diff_arguments_by_path(path)
+        if gfiles:
+            self.create_diff_signal.emit(gfiles, kwargs)
+
+    def get_diff_arguments_by_path(self, path):
+        it = self.model.get_iter(path)
         rows = self.model.value_paths(it)
         existing_paths = [r for r in rows if os.path.exists(r)]
         if not existing_paths:
-            return
+            return None, {}
         is_file = os.path.isfile(existing_paths[0])
         is_dir = os.path.isdir(existing_paths[0])
         if is_file:
@@ -1546,14 +1553,31 @@ class DirDiff(Gtk.Box, MeldDoc):
                 Gio.File.new_for_path(r) if os.path.isfile(r) else None
                 for r in rows
             ]
+            meta = {
+                'parent': self,
+                'current_path': path,
+            }
+            return gfiles, {'meta': meta}
         elif is_dir:
             gfiles = [
                 Gio.File.new_for_path(r) if os.path.isdir(r) else None
                 for r in rows
             ]
-        else:
-            return
-        self.create_diff_signal.emit(gfiles, {})
+            return gfiles, {}
+        return None, {}
+
+    def get_next_prev_diff_file(self, start_path):
+        def match_func(it):
+            state = self.model.get_state(it, 0)
+            if state in (tree.STATE_NORMAL, tree.STATE_NOCHANGE, tree.STATE_EMPTY):
+                return False
+            paths = self.model.value_paths(it)
+            for p in paths:
+                if p and os.path.exists(p):
+                    return os.path.isfile(p)
+            return False
+
+        return self.model.get_previous_next_paths(start_path, match_func)
 
     def action_diff(self, *args):
         pane = self._get_focused_pane()
