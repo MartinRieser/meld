@@ -440,3 +440,53 @@ def test_findbar_shortcuts():
     shortcut_controllers = [c for c in controllers if isinstance(c, Gtk.ShortcutController)]
 
     assert len(shortcut_controllers) > 0
+
+
+def test_filediff_sibling_navigation():
+    from unittest.mock import MagicMock
+
+    from gi.repository import Gio
+
+    filediff = FileDiff(2)
+
+    # Mock parent representing the VcView
+    parent = MagicMock()
+    # Let's say there is a previous file and a next file
+    parent.get_next_prev_diff_file.return_value = ('prev_file_path', 'next_file_path')
+
+    # Mock get_diff_arguments_by_path to return some dummy files and meta
+    dummy_gfile1 = Gio.File.new_for_path("file1.txt")
+    dummy_gfile2 = Gio.File.new_for_path("file2.txt")
+    parent.get_diff_arguments_by_path.return_value = (
+        [dummy_gfile1, dummy_gfile2],
+        {'meta': {'parent': parent, 'current_path': 'next_file_path'}}
+    )
+
+    # Set the initial metadata
+    meta = {
+        'parent': parent,
+        'current_path': 'start_path',
+    }
+    filediff.set_meta(meta)
+
+    # Check that action states are updated correctly
+    action_prev = filediff.view_action_group.lookup_action('previous-file')
+    action_next = filediff.view_action_group.lookup_action('next-file')
+
+    assert action_prev is not None
+    assert action_next is not None
+    assert action_prev.get_enabled() is True
+    assert action_next.get_enabled() is True
+
+    # Trigger next-file action
+    action_next.activate(None)
+
+    # Verify mock calls and state update
+    from unittest.mock import call
+    assert parent.get_next_prev_diff_file.call_args_list == [
+        call('start_path'),
+        call('start_path'),
+        call('next_file_path'),
+    ]
+    parent.get_diff_arguments_by_path.assert_called_once_with('next_file_path')
+    assert filediff.meta['current_path'] == 'next_file_path'

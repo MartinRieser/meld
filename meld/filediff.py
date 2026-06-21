@@ -893,23 +893,23 @@ class FileDiff(Gtk.Box, MeldDoc):
         if not parent or not current_path:
             return
 
-        if not self.check_unsaved_changes():
-            return
+        def on_confirm():
+            prev_path, next_path = parent.get_next_prev_diff_file(current_path)
+            target_path = next_path if direction == 1 else prev_path
 
-        prev_path, next_path = parent.get_next_prev_diff_file(current_path)
-        target_path = next_path if direction == 1 else prev_path
+            if target_path:
+                gfiles, kwargs = parent.get_diff_arguments_by_path(target_path)
+                if gfiles:
+                    self.set_files(gfiles)
+                    new_meta = kwargs.get('meta', {})
+                    if new_meta:
+                        self.set_meta(new_meta)
+                    else:
+                        self.meta['current_path'] = target_path
+                        self.update_file_navigation_sensitivity()
+                    self.recompute_label()
 
-        if target_path:
-            gfiles, kwargs = parent.get_diff_arguments_by_path(target_path)
-            if gfiles:
-                self.set_files(gfiles)
-                new_meta = kwargs.get('meta', {})
-                if new_meta:
-                    self.set_meta(new_meta)
-                else:
-                    self.meta['current_path'] = target_path
-                    self.update_file_navigation_sensitivity()
-                self.recompute_label()
+        self.confirm_unsaved_change_action(on_confirm=on_confirm)
 
     def update_file_navigation_sensitivity(self):
         parent = self.meta.get('parent', None)
@@ -2500,11 +2500,14 @@ class FileDiff(Gtk.Box, MeldDoc):
 
     def revert_pane(self, *extra):
         pane = extra[0]
-        if not self.check_unsaved_changes(self.textbuffer[pane:pane + 1]):
-            return
+        def on_confirm():
+            data = self.textbuffer[pane].data
+            self.set_file(pane, data.gfile, data.encoding)
 
-        data = self.textbuffer[pane].data
-        self.set_file(pane, data.gfile, data.encoding)
+        self.confirm_unsaved_change_action(
+            on_confirm=on_confirm,
+            buffers=self.textbuffer[pane:pane + 1]
+        )
 
     def action_refresh(self, *extra):
         self.refresh_comparison()
