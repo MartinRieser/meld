@@ -63,6 +63,7 @@ no-lines-before = [
 order-by-type = true
 
 [tool.pytest.ini_options]
+testpaths = ["test"]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::gi.PyGIDeprecationWarning",
