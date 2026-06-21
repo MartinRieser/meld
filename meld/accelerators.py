@@ -18,10 +18,12 @@ VIEW_ACCELERATORS: Dict[str, Union[str, Sequence[str]]] = {
     # sensitivity set, and so we get alert bells when trying to move
     # past the last/first change.
     'view.next-change-shortcut': ('<Alt>Down', '<Alt>KP_Down', '<Primary>D'),
+    'view.next-file': '<Primary><Shift>Down',
     'view.next-pane': '<Alt>Page_Down',
     'view.open-external': '<Primary><Shift>O',
     # See view.next-change-shortcut
     'view.previous-change-shortcut': ('<Alt>Up', '<Alt>KP_Up', '<Primary>E'),
+    'view.previous-file': '<Primary><Shift>Up',
     'view.previous-pane': '<Alt>Page_Up',
     'view.redo': '<Primary><Shift>Z',
     'view.refresh': ('<Control>R', 'F5'),
