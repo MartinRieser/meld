@@ -868,19 +868,22 @@ class VcView(Gtk.Box, MeldDoc):
             self._update_item_state(it, entry)
 
     def find_iter_by_name(self, name):
-        name = os.path.realpath(os.path.abspath(name))
+        norm_name = os.path.normcase(os.path.realpath(os.path.abspath(name)))
         it = self.model.get_iter_first()
-        path = self.model.get_file_path(it)
+        if not it:
+            return None
+
         while it:
-            if name == path:
+            path = os.path.normcase(self.model.get_file_path(it))
+            if norm_name == path:
                 return it
-            elif name.startswith(path):
+            elif norm_name.startswith(path):
                 child = self.model.iter_children(it)
                 while child:
-                    path = self.model.get_file_path(child)
-                    if name == path:
+                    path = os.path.normcase(self.model.get_file_path(child))
+                    if norm_name == path:
                         return child
-                    elif name.startswith(path):
+                    elif norm_name.startswith(path):
                         break
                     else:
                         child = self.model.iter_next(child)

@@ -227,4 +227,91 @@ def test_vcview_run_diff_casing(tmp_path):
     assert diff_args is not None
 
 
+def test_vcview_sibling_navigation_integration(tmp_path):
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    subprocess.run(["git", "init"], cwd=str(repo_dir), check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=str(repo_dir), check=True)
+    subprocess.run(["git", "config", "user.name", "Test User"], cwd=str(repo_dir), check=True)
+
+    # Create two committed files
+    file_a = repo_dir / "file_a.txt"
+    file_b = repo_dir / "file_b.txt"
+    file_a.write_text("hello a\n")
+    file_b.write_text("hello b\n")
+    subprocess.run(["git", "add", "file_a.txt", "file_b.txt"], cwd=str(repo_dir), check=True)
+    subprocess.run(["git", "commit", "-m", "initial"], cwd=str(repo_dir), check=True)
+
+    # Modify both
+    file_a.write_text("hello a modified\n")
+    file_b.write_text("hello b modified\n")
+
+    vcview = VcView()
+    # ensure modified files are visible
+    vcview.props.status_filters = ['flatten', 'modified']
+    vcview.set_location(str(repo_dir))
+    vcview.scheduler.complete_tasks()
+
+    # Get diff arguments for file_a.txt
+    gfiles, kwargs = vcview.get_diff_arguments_by_path(str(file_a))
+    assert gfiles is not None
+
+    # Instantiate FileDiff and set it up
+    from meld.filediff import FileDiff
+    filediff = FileDiff(len(gfiles))
+    filediff.set_files(gfiles)
+    if 'meta' in kwargs:
+        filediff.set_meta(kwargs['meta'])
+
+    # Verify initial navigation state (we are at file_a.txt, so we should be able to go to file_b.txt)
+    action_prev = filediff.view_action_group.lookup_action('previous-file')
+    action_next = filediff.view_action_group.lookup_action('next-file')
+
+    assert action_prev is not None
+    assert action_next is not None
+
+    has_prev = action_prev.get_enabled()
+    has_next = action_next.get_enabled()
+    print(f"Initial: has_prev={has_prev}, has_next={has_next}")
+
+    # They should not be both False if both files are modified and visible!
+    assert has_prev or has_next
+
+    if has_next:
+        action_next.activate(None)
+        filediff.scheduler.complete_tasks()
+        assert filediff.meta['current_path'] is not None
+
+
+def test_vcview_find_iter_by_name_casing_integration(tmp_path):
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    subprocess.run(["git", "init"], cwd=str(repo_dir), check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=str(repo_dir), check=True)
+    subprocess.run(["git", "config", "user.name", "Test User"], cwd=str(repo_dir), check=True)
+
+    file_a = repo_dir / "file_a.txt"
+    file_a.write_text("hello\n")
+    subprocess.run(["git", "add", "file_a.txt"], cwd=str(repo_dir), check=True)
+    subprocess.run(["git", "commit", "-m", "initial"], cwd=str(repo_dir), check=True)
+
+    vcview = VcView()
+    vcview.props.status_filters = ['flatten', 'modified', 'unknown', 'normal']
+    vcview.set_location(str(repo_dir))
+    vcview.scheduler.complete_tasks()
+
+    # Get path of file_a, but toggle the case of the first character (drive letter or first letter of path)
+    path_str = str(file_a)
+    if path_str[0].isalpha():
+        toggled_char = path_str[0].lower() if path_str[0].isupper() else path_str[0].upper()
+        toggled_path = toggled_char + path_str[1:]
+    else:
+        toggled_path = path_str
+
+    # Currently, find_iter_by_name should find it regardless of casing if it is case-insensitive.
+    # Let's assert that it is found.
+    it = vcview.find_iter_by_name(toggled_path)
+    assert it is not None
+
+
 
